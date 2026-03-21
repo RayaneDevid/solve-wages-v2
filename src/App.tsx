@@ -9,6 +9,7 @@ import { Role } from '@/types';
 import Layout from '@/components/layout/layout';
 import ProtectedRoute from '@/routes/protected-route';
 import ErrorBoundary from '@/components/ui/error-boundary';
+import { Navigate } from 'react-router-dom';
 import LoginPage from '@/pages/login-page';
 import DevLoginPage from '@/pages/dev-login-page';
 import AuthCallbackPage from '@/pages/auth-callback-page';
@@ -84,6 +85,7 @@ function AppRoutes() {
 
   return (
     <Routes>
+      <Route path="/" element={<Navigate to="/login" replace />} />
       {isDevMode && <Route path="/dev-login" element={<DevLoginPage />} />}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/auth/callback" element={<AuthCallbackPage />} />
