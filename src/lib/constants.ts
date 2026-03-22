@@ -298,6 +298,8 @@ const GRADE_COLORS: Record<string, { bg: string; text: string }> = {
   'Gérant Staff':              { bg: 'rgba(6, 182, 212, 0.12)',  text: '#22d3ee' },  // cyan
   'Gérant RP':                 { bg: 'rgba(236, 72, 153, 0.12)', text: '#f472b6' },  // pink
   'Gérant Equilibrage':        { bg: 'rgba(245, 158, 11, 0.12)', text: '#fbbf24' },  // amber
+  'Gérant Développement':      { bg: 'rgba(59, 130, 246, 0.12)', text: '#60a5fa' },  // blue (same as serveur)
+  'Gérant Discord':            { bg: 'rgba(99, 102, 241, 0.12)', text: '#818cf8' },  // indigo
   // Administration
   'Administrateur':            { bg: 'rgba(6, 182, 212, 0.12)',  text: '#22d3ee' },  // cyan
   // Modération
@@ -329,6 +331,16 @@ const GRADE_COLORS: Record<string, { bg: string; text: string }> = {
   'Equilibrage':               { bg: 'rgba(239, 68, 68, 0.10)', text: '#fca5a5' },  // red
   // Streamer
   'Référent Streamer':         { bg: 'rgba(99, 102, 241, 0.12)', text: '#818cf8' },  // indigo
+  // Short-form aliases (used by ROLE_LABELS)
+  'Resp. Modération':          { bg: 'rgba(244, 63, 94, 0.15)',  text: '#fb7185' },
+  'Resp. Animation':           { bg: 'rgba(251, 146, 60, 0.15)', text: '#fb923c' },
+  'Resp. MJ':                  { bg: 'rgba(168, 85, 247, 0.15)', text: '#c084fc' },
+  'Resp. Douane':              { bg: 'rgba(34, 197, 94, 0.15)',  text: '#4ade80' },
+  'Resp. Builder':             { bg: 'rgba(234, 179, 8, 0.15)',  text: '#facc15' },
+  'Resp. CM':                  { bg: 'rgba(45, 212, 191, 0.15)', text: '#2dd4bf' },
+  'Resp. Lore':                { bg: 'rgba(14, 165, 233, 0.15)', text: '#38bdf8' },
+  'Resp. Équilibrage PvP':     { bg: 'rgba(239, 68, 68, 0.12)', text: '#fca5a5' },
+  'Équilibrage PvP':           { bg: 'rgba(239, 68, 68, 0.10)', text: '#fca5a5' },
 };
 
 export function getGradeColor(grade: string): { bg: string; text: string } {

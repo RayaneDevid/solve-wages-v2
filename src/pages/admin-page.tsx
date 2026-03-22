@@ -6,7 +6,7 @@ import type { User } from '@/types';
 import { useAuthStore } from '@/stores/auth.store';
 import { useUsers, useCreateUser, useUpdateUser, useDeleteUser, useBulkImportUsers } from '@/hooks/queries/use-admin';
 import Badge from '@/components/ui/badge';
-import { getRoleBadgeVariant, ROLE_HIERARCHY } from '@/lib/constants';
+import { ROLE_HIERARCHY, ROLE_LABELS, getGradeColor, getGradeGlobalPriority } from '@/lib/constants';
 import Button from '@/components/ui/button';
 import Input from '@/components/ui/input';
 import Select from '@/components/ui/select';
@@ -75,8 +75,8 @@ export default function AdminPage() {
         return matchSearch && matchRole && matchStatus;
       })
       .sort((a, b) => {
-        const ha = ROLE_HIERARCHY[a.role] ?? 99;
-        const hb = ROLE_HIERARCHY[b.role] ?? 99;
+        const ha = ROLE_HIERARCHY[a.role] ?? getGradeGlobalPriority(ROLE_LABELS[a.role] ?? a.role);
+        const hb = ROLE_HIERARCHY[b.role] ?? getGradeGlobalPriority(ROLE_LABELS[b.role] ?? b.role);
         if (ha !== hb) return ha - hb;
         return a.username.localeCompare(b.username);
       });
@@ -256,9 +256,17 @@ export default function AdminPage() {
                   <span className="font-mono text-xs text-text-secondary">{user.discord_id}</span>
                 </TableCell>
                 <TableCell>
-                  <Badge variant={getRoleBadgeVariant(user.role)}>
-                    {tr.roles[user.role as keyof typeof tr.roles]}
-                  </Badge>
+                  {(() => {
+                    const colors = getGradeColor(ROLE_LABELS[user.role]);
+                    return (
+                      <span
+                        className="inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium"
+                        style={{ backgroundColor: colors.bg, color: colors.text }}
+                      >
+                        {tr.roles[user.role as keyof typeof tr.roles]}
+                      </span>
+                    );
+                  })()}
                 </TableCell>
                 <TableCell>
                   <Badge variant={user.is_active ? 'success' : 'danger'}>
