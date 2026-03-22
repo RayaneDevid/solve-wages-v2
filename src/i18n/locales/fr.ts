@@ -269,6 +269,7 @@ const fr = {
     },
   },
   roles: {
+    developpeur: 'Développeur',
     coordinateur: 'Coordinateur',
     gerant_rp: 'Gérant RP',
     gerant_dev: 'Gérant Développement',
@@ -297,6 +298,7 @@ const fr = {
     equilibrage_pvp: 'Équilibrage PvP',
     resp_cm: 'Resp. CM',
     cm: 'CM',
+    referent_streamer: 'Référent Streamer',
   },
   poles: {
     gerance: 'Gérance',

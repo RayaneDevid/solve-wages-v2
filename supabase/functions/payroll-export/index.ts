@@ -3,6 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { corsHeaders } from '../_shared/cors.ts';
 import { getUser } from '../_shared/auth.ts';
 import { errorResponse } from '../_shared/response.ts';
+import { isAdmin } from '../_shared/roles.ts';
 
 const HEADERS = [
   'Pôle',
@@ -83,7 +84,7 @@ serve(async (req) => {
 
     const user = await getUser(req);
 
-    if (user.role !== 'coordinateur') {
+    if (!isAdmin(user)) {
       return errorResponse('Accès refusé', 403);
     }
 

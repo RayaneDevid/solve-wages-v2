@@ -4,7 +4,7 @@ import { t } from '@/i18n';
 import { Pole, type PoleMember } from '@/types';
 import { useAuthStore } from '@/stores/auth.store';
 import { isCoordinateur, isGerantStaff, getPoleForRole } from '@/lib/utils';
-import { POLE_LABELS, GRADES_BY_POLE, getGradeColor, compareByGradeThenName } from '@/lib/constants';
+import { POLE_LABELS, GRADES_BY_POLE, getGradeColor, compareByGradeThenName, getGradeGlobalPriority } from '@/lib/constants';
 import { useMembers, useAddMember, useUpdateMember, useDeleteMember, useBulkImport } from '@/hooks/queries/use-members';
 import Button from '@/components/ui/button';
 import Select from '@/components/ui/select';
@@ -145,8 +145,16 @@ export default function MembersPage() {
 
   const members = useMemo(() => {
     if (!rawMembers) return undefined;
+    if (isAllView) {
+      return [...rawMembers].sort((a, b) => {
+        const pa = getGradeGlobalPriority(a.grade);
+        const pb = getGradeGlobalPriority(b.grade);
+        if (pa !== pb) return pa - pb;
+        return a.discord_username.localeCompare(b.discord_username);
+      });
+    }
     return [...rawMembers].sort((a, b) => compareByGradeThenName(a, b, a.pole as Pole));
-  }, [rawMembers]);
+  }, [rawMembers, isAllView]);
 
   const poleOptions = [
     ...(isCoord ? [{ value: ALL_OPTION, label: tr.members.allStaffs }] : []),

@@ -1,6 +1,42 @@
 import { Role, Pole } from '@/types';
 
+/** Maps a grade display name to a hierarchy number (lower = higher rank). Used for cross-pole sorting. */
+const GRADE_GLOBAL_ORDER: Record<string, number> = {
+  'Développeur': 0,
+  'Coordinateur': 1,
+  'Gérant Serveur': 2,
+  'Gérant Staff': 3,
+  'Gérant RP': 4,
+  'Gérant Equilibrage': 5,
+  'Administrateur': 6,
+  'Responsable Modération': 7,
+  'Responsable Animation': 7,
+  'Responsable MJ': 7,
+  'Responsable Douane': 7,
+  'Responsable Builder': 7,
+  'Responsable CM': 7,
+  'Responsable Lore': 7,
+  'Modérateur Senior': 8,
+  'Animateur Senior': 8,
+  'MJ Senior': 8,
+  'Douanier Senior': 8,
+  'Modérateur': 9,
+  'Animateur': 9,
+  'MJ': 9,
+  'Douanier': 9,
+  'Builder': 9,
+  'CM': 9,
+  'Lore': 9,
+  'Equilibrage': 9,
+  'Référent Streamer': 9,
+};
+
+export function getGradeGlobalPriority(grade: string): number {
+  return GRADE_GLOBAL_ORDER[grade] ?? 99;
+}
+
 export const ROLE_TO_POLE: Record<Role, Pole | null> = {
+  [Role.DEVELOPPEUR]: null,
   [Role.COORDINATEUR]: null,
   [Role.GERANT_RP]: Pole.GERANCE,
   [Role.GERANT_DEV]: Pole.GERANCE,
@@ -29,10 +65,12 @@ export const ROLE_TO_POLE: Record<Role, Pole | null> = {
   [Role.EQUILIBRAGE_PVP]: Pole.EQUILIBRAGE_PVP,
   [Role.RESP_CM]: Pole.COMMUNITY_MANAGER,
   [Role.CM]: Pole.COMMUNITY_MANAGER,
+  [Role.REFERENT_STREAMER]: Pole.STREAMER,
 };
 
 export const GRADES_BY_POLE: Record<Pole, string[]> = {
   [Pole.GERANCE]: [
+    'Développeur',
     'Coordinateur',
     'Gérant Serveur',
     'Gérant Staff',
@@ -53,6 +91,7 @@ export const GRADES_BY_POLE: Record<Pole, string[]> = {
 };
 
 export const ROLE_HIERARCHY: Record<Role, number> = {
+  [Role.DEVELOPPEUR]: -1,
   [Role.COORDINATEUR]: 0,
   [Role.GERANT_RP]: 1,
   [Role.GERANT_DEV]: 1,
@@ -81,9 +120,11 @@ export const ROLE_HIERARCHY: Record<Role, number> = {
   [Role.EQUILIBRAGE_PVP]: 5,
   [Role.RESP_CM]: 3,
   [Role.CM]: 5,
+  [Role.REFERENT_STREAMER]: 3,
 };
 
 export const ROLE_LABELS: Record<Role, string> = {
+  [Role.DEVELOPPEUR]: 'Développeur',
   [Role.COORDINATEUR]: 'Coordinateur',
   [Role.GERANT_RP]: 'Gérant RP',
   [Role.GERANT_DEV]: 'Gérant Développement',
@@ -112,10 +153,12 @@ export const ROLE_LABELS: Record<Role, string> = {
   [Role.EQUILIBRAGE_PVP]: 'Équilibrage PvP',
   [Role.RESP_CM]: 'Resp. CM',
   [Role.CM]: 'CM',
+  [Role.REFERENT_STREAMER]: 'Référent Streamer',
 };
 
 // Maps grade display names (from GRADES_BY_POLE / CSV) → Role enum values
 export const GRADE_TO_ROLE: Record<string, Role> = {
+  'Développeur': Role.DEVELOPPEUR,
   'Coordinateur': Role.COORDINATEUR,
   'Gérant Serveur': Role.GERANT_SERVEUR,
   'Gérant Staff': Role.GERANT_STAFF,
@@ -141,7 +184,7 @@ export const GRADE_TO_ROLE: Record<string, Role> = {
   'Responsable Lore': Role.RESP_LORE,
   'Lore': Role.LORE,
   'Equilibrage': Role.EQUILIBRAGE_PVP,
-  'Référent Streamer': Role.EQUILIBRAGE_PVP, // closest mapping, may need its own role
+  'Référent Streamer': Role.REFERENT_STREAMER,
 };
 
 export function gradeToRole(grade: string): Role | null {
@@ -186,21 +229,23 @@ export const POLE_RESPONSIBLE_ROLES: Role[] = [
 ];
 
 export const PANEL_ACCESS_ROLES: Role[] = [
+  Role.DEVELOPPEUR,
   Role.COORDINATEUR,
   Role.GERANT_STAFF,
   ...POLE_RESPONSIBLE_ROLES,
 ];
 
 export const ASSIGNABLE_ROLES: Role[] = Object.values(Role).filter(
-  (r) => r !== Role.COORDINATEUR,
+  (r) => r !== Role.COORDINATEUR && r !== Role.DEVELOPPEUR,
 );
 
 const GERANCE_GRADE_ORDER: Record<string, number> = {
-  'Coordinateur': 0,
-  'Gérant Serveur': 1,
-  'Gérant Staff': 2,
-  'Gérant RP': 3,
-  'Gérant Equilibrage': 4,
+  'Développeur': 0,
+  'Coordinateur': 1,
+  'Gérant Serveur': 2,
+  'Gérant Staff': 3,
+  'Gérant RP': 4,
+  'Gérant Equilibrage': 5,
 };
 
 /** Returns a sort priority for a grade within a pole (lower = higher rank). */
@@ -227,7 +272,7 @@ export function compareByGradeThenName(
 }
 
 export function getRoleBadgeVariant(role: Role): 'default' | 'success' | 'warning' | 'danger' | 'info' | 'purple' | 'cyan' {
-  if (role === Role.COORDINATEUR) return 'purple';
+  if (role === Role.DEVELOPPEUR || role === Role.COORDINATEUR) return 'purple';
   if (role === Role.ADMINISTRATEUR) return 'cyan';
   if (role.startsWith('gerant_')) return 'info';
   if (role.startsWith('resp_')) return 'warning';
@@ -236,7 +281,7 @@ export function getRoleBadgeVariant(role: Role): 'default' | 'success' | 'warnin
 
 export function getGradeBadgeVariant(grade: string): 'default' | 'success' | 'warning' | 'danger' | 'info' | 'purple' | 'cyan' {
   const lower = grade.toLowerCase();
-  if (lower === 'coordinateur') return 'purple';
+  if (lower === 'développeur' || lower === 'developpeur' || lower === 'coordinateur') return 'purple';
   if (lower === 'administrateur') return 'cyan';
   if (lower.startsWith('gérant') || lower.startsWith('gerant')) return 'info';
   if (lower.startsWith('responsable') || lower.startsWith('resp')) return 'warning';
@@ -247,6 +292,7 @@ export function getGradeBadgeVariant(grade: string): 'default' | 'success' | 'wa
 /** Per-grade unique colors for the members table. Returns { bg, text } CSS color strings. */
 const GRADE_COLORS: Record<string, { bg: string; text: string }> = {
   // Gérance
+  'Développeur':               { bg: 'rgba(139, 92, 246, 0.18)', text: '#c4b5fd' },  // violet strong
   'Coordinateur':              { bg: 'rgba(139, 92, 246, 0.12)', text: '#a78bfa' },  // violet
   'Gérant Serveur':            { bg: 'rgba(59, 130, 246, 0.12)', text: '#60a5fa' },  // blue
   'Gérant Staff':              { bg: 'rgba(6, 182, 212, 0.12)',  text: '#22d3ee' },  // cyan

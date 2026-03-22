@@ -6,7 +6,7 @@ import type { User } from '@/types';
 import { useAuthStore } from '@/stores/auth.store';
 import { useUsers, useCreateUser, useUpdateUser, useDeleteUser, useBulkImportUsers } from '@/hooks/queries/use-admin';
 import Badge from '@/components/ui/badge';
-import { getRoleBadgeVariant } from '@/lib/constants';
+import { getRoleBadgeVariant, ROLE_HIERARCHY } from '@/lib/constants';
 import Button from '@/components/ui/button';
 import Input from '@/components/ui/input';
 import Select from '@/components/ui/select';
@@ -61,18 +61,25 @@ export default function AdminPage() {
 
   const filteredUsers = useMemo(() => {
     if (!users) return [];
-    return users.filter((u) => {
-      const matchSearch =
-        !search ||
-        u.username.toLowerCase().includes(search.toLowerCase()) ||
-        u.discord_id.includes(search);
-      const matchRole = !roleFilter || u.role === roleFilter;
-      const matchStatus =
-        statusFilter === 'all' ||
-        (statusFilter === 'active' && u.is_active) ||
-        (statusFilter === 'inactive' && !u.is_active);
-      return matchSearch && matchRole && matchStatus;
-    });
+    return users
+      .filter((u) => {
+        const matchSearch =
+          !search ||
+          u.username.toLowerCase().includes(search.toLowerCase()) ||
+          u.discord_id.includes(search);
+        const matchRole = !roleFilter || u.role === roleFilter;
+        const matchStatus =
+          statusFilter === 'all' ||
+          (statusFilter === 'active' && u.is_active) ||
+          (statusFilter === 'inactive' && !u.is_active);
+        return matchSearch && matchRole && matchStatus;
+      })
+      .sort((a, b) => {
+        const ha = ROLE_HIERARCHY[a.role] ?? 99;
+        const hb = ROLE_HIERARCHY[b.role] ?? 99;
+        if (ha !== hb) return ha - hb;
+        return a.username.localeCompare(b.username);
+      });
   }, [users, search, roleFilter, statusFilter]);
 
   const existingDiscordIds = useMemo(() => (users ?? []).map((u) => u.discord_id), [users]);

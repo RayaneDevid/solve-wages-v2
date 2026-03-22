@@ -3,6 +3,46 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { corsHeaders } from '../_shared/cors.ts';
 import { getUser } from '../_shared/auth.ts';
 import { jsonResponse, errorResponse } from '../_shared/response.ts';
+import { isAdmin } from '../_shared/roles.ts';
+
+// Server-side grade display name → role enum mapping (safety net)
+const GRADE_TO_ROLE: Record<string, string> = {
+  'Développeur': 'developpeur',
+  'Coordinateur': 'coordinateur',
+  'Gérant Serveur': 'gerant_serveur',
+  'Gérant Staff': 'gerant_staff',
+  'Gérant RP': 'gerant_rp',
+  'Gérant Equilibrage': 'gerant_equilibrage',
+  'Gérant Développement': 'gerant_dev',
+  'Gérant Discord': 'gerant_discord',
+  'Administrateur': 'administrateur',
+  'Responsable Modération': 'resp_moderation',
+  'Modérateur Senior': 'moderateur_senior',
+  'Modérateur': 'moderateur',
+  'Responsable Animation': 'resp_animation',
+  'Animateur Senior': 'animateur_senior',
+  'Animateur': 'animateur',
+  'Responsable MJ': 'resp_mj',
+  'MJ Senior': 'mj_senior',
+  'MJ': 'mj',
+  'Responsable Douane': 'resp_douane',
+  'Douanier Senior': 'douanier_senior',
+  'Douanier': 'douanier',
+  'Responsable Builder': 'resp_builder',
+  'Builder': 'builder',
+  'Responsable CM': 'resp_cm',
+  'CM': 'cm',
+  'Responsable Lore': 'resp_lore',
+  'Lore': 'lore',
+  'Resp. Équilibrage PvP': 'resp_equilibrage_pvp',
+  'Équilibrage PvP': 'equilibrage_pvp',
+  'Equilibrage': 'equilibrage_pvp',
+  'Référent Streamer': 'referent_streamer',
+};
+
+function normalizeRole(role: string): string {
+  return GRADE_TO_ROLE[role] ?? role;
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -12,8 +52,8 @@ serve(async (req) => {
   try {
     const user = await getUser(req);
 
-    // All methods require coordinateur role
-    if (user.role !== 'coordinateur') {
+    // All methods require admin role (coordinateur or developpeur)
+    if (!isAdmin(user)) {
       return errorResponse('Accès réservé au coordinateur', 403);
     }
 
@@ -62,7 +102,7 @@ serve(async (req) => {
             .insert(toInsert.map((u) => ({
               discord_id: u.discord_id,
               username: u.username,
-              role: u.role,
+              role: normalizeRole(u.role),
             })));
 
           if (insertErr) {
@@ -94,7 +134,7 @@ serve(async (req) => {
 
       const { data, error } = await supabase
         .from('users')
-        .insert({ discord_id, username, role })
+        .insert({ discord_id, username, role: normalizeRole(role) })
         .select('*')
         .single();
 
@@ -119,7 +159,7 @@ serve(async (req) => {
       }
 
       const updates: Record<string, unknown> = {};
-      if (role !== undefined) updates.role = role;
+      if (role !== undefined) updates.role = normalizeRole(role);
       if (is_active !== undefined) updates.is_active = is_active;
 
       if (Object.keys(updates).length === 0) {

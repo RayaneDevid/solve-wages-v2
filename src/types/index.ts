@@ -1,4 +1,5 @@
 export enum Role {
+  DEVELOPPEUR = 'developpeur',
   COORDINATEUR = 'coordinateur',
   GERANT_RP = 'gerant_rp',
   GERANT_DEV = 'gerant_dev',
@@ -27,6 +28,7 @@ export enum Role {
   EQUILIBRAGE_PVP = 'equilibrage_pvp',
   RESP_CM = 'resp_cm',
   CM = 'cm',
+  REFERENT_STREAMER = 'referent_streamer',
 }
 
 export enum Pole {

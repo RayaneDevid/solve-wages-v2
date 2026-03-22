@@ -36,6 +36,7 @@ const queryClient = new QueryClient({
 const isDevMode = import.meta.env.VITE_DEV_MODE === 'true';
 
 const PAYROLL_ROLES: Role[] = [
+  Role.DEVELOPPEUR,
   Role.COORDINATEUR,
   Role.GERANT_STAFF,
   Role.RESP_MODERATION,
@@ -107,7 +108,7 @@ function AppRoutes() {
       </Route>
 
       {/* Global view + Admin: coordinateur only */}
-      <Route element={<ProtectedRoute allowedRoles={[Role.COORDINATEUR]} />}>
+      <Route element={<ProtectedRoute allowedRoles={[Role.DEVELOPPEUR, Role.COORDINATEUR]} />}>
         <Route element={<Layout />}>
           <Route path="/global" element={<GlobalViewPage />} />
           <Route path="/admin" element={<AdminPage />} />

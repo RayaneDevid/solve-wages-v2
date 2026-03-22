@@ -16,15 +16,19 @@ export interface AppUser {
   role: string;
 }
 
+export function isAdmin(user: AppUser): boolean {
+  return user.role === 'coordinateur' || user.role === 'developpeur';
+}
+
 export function canAccessPole(user: AppUser, pole: string): boolean {
-  if (user.role === 'coordinateur') return true;
+  if (isAdmin(user)) return true;
   if (user.role === 'gerant_staff') return GERANT_STAFF_POLES.includes(pole);
   const respPole = RESP_TO_POLE[user.role];
   return respPole === pole;
 }
 
 export function getAllowedPoles(user: AppUser): string[] | null {
-  if (user.role === 'coordinateur') return null; // null = all poles
+  if (isAdmin(user)) return null; // null = all poles
   if (user.role === 'gerant_staff') return GERANT_STAFF_POLES;
   const respPole = RESP_TO_POLE[user.role];
   if (respPole) return [respPole];

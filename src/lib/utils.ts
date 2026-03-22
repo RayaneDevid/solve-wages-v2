@@ -16,7 +16,7 @@ export function isPoleResponsible(role: Role): boolean {
 }
 
 export function isCoordinateur(role: Role): boolean {
-  return role === Role.COORDINATEUR;
+  return role === Role.COORDINATEUR || role === Role.DEVELOPPEUR;
 }
 
 export function isGerantStaff(role: Role): boolean {

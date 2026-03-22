@@ -3,7 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { corsHeaders } from '../_shared/cors.ts';
 import { getUser } from '../_shared/auth.ts';
 import { jsonResponse, errorResponse } from '../_shared/response.ts';
-import { getAllowedPoles, canAccessPole } from '../_shared/roles.ts';
+import { getAllowedPoles, canAccessPole, isAdmin } from '../_shared/roles.ts';
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -150,7 +150,7 @@ serve(async (req) => {
       }
 
       // Check week status
-      if (user.role === 'coordinateur') {
+      if (isAdmin(user)) {
         if (week.status === 'locked') {
           return errorResponse('Semaine verrouillée, modification impossible', 400);
         }
@@ -209,7 +209,7 @@ serve(async (req) => {
         }
       }
 
-      const isCoordinateur = user.role === 'coordinateur';
+      const isCoordinateur = isAdmin(user);
       const now = new Date().toISOString();
 
       // Fetch existing entries to preserve confirmed_by_coordinator when resp saves
@@ -279,7 +279,7 @@ serve(async (req) => {
 
     // --- PATCH (confirm/unconfirm entries — coordinateur only) ---
     if (req.method === 'PATCH') {
-      if (user.role !== 'coordinateur') {
+      if (!isAdmin(user)) {
         return errorResponse('Seul le coordinateur peut confirmer les entrées', 403);
       }
 
