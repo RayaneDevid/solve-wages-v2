@@ -181,10 +181,48 @@ export default function MembersPage() {
     }
   }, [addMember, activePole, tr]);
 
-  const handleBulkImport = useCallback(async (parsedMembers: { discord_username: string; discord_id: string; steam_id: string; grade: string }[], pole?: string) => {
-    const targetPole = pole ?? activePole;
-    if (!targetPole) return;
+  const handleBulkImport = useCallback(async (parsedMembers: { discord_username: string; discord_id: string; steam_id: string; grade: string; pole?: string }[], pole?: string) => {
     try {
+      // If members have individual poles (from CSV with pole column), group and import per pole
+      const hasPerMemberPoles = parsedMembers.some((m) => m.pole);
+      if (hasPerMemberPoles) {
+        const byPole = new Map<string, typeof parsedMembers>();
+        for (const m of parsedMembers) {
+          const p = m.pole;
+          if (!p) continue;
+          if (!byPole.has(p)) byPole.set(p, []);
+          byPole.get(p)!.push(m);
+        }
+        let totalAdded = 0;
+        let totalReactivated = 0;
+        let totalSkipped = 0;
+        for (const [poleName, members] of byPole) {
+          const result = await bulkImport.mutateAsync({
+            pole: poleName,
+            members: members.map((m) => ({
+              discord_username: m.discord_username,
+              discord_id: m.discord_id,
+              steam_id: m.steam_id || undefined,
+              grade: m.grade,
+            })),
+          });
+          totalAdded += result.added;
+          totalReactivated += result.reactivated;
+          totalSkipped += result.skipped;
+        }
+        showToast(
+          tr.members.toast.bulkImported
+            .replace('{added}', String(totalAdded))
+            .replace('{reactivated}', String(totalReactivated))
+            .replace('{skipped}', String(totalSkipped)),
+        );
+        setShowImportModal(false);
+        return;
+      }
+
+      // Single pole import
+      const targetPole = pole ?? activePole;
+      if (!targetPole) return;
       const result = await bulkImport.mutateAsync({
         pole: targetPole,
         members: parsedMembers.map((m) => ({
