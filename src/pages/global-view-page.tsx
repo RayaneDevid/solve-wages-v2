@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react';
-import { Download, Copy } from 'lucide-react';
+import { useState, useCallback, useMemo } from 'react';
+import { Download, Copy, CheckCircle2 } from 'lucide-react';
 import { t } from '@/i18n';
 import { Pole, type PayrollEntry, type PayrollSubmission, type PayrollWeek } from '@/types';
 import { cn, formatShortDate, isCoordinateur } from '@/lib/utils';
@@ -10,6 +10,7 @@ import {
   usePayrollEntries,
   useSaveEntries,
   useConfirmEntry,
+  useBulkConfirmEntries,
   useExportPayroll,
 } from '@/hooks/queries/use-payroll';
 import Button from '@/components/ui/button';
@@ -118,11 +119,12 @@ export default function GlobalViewPage() {
   const { data: allEntries, isLoading: entriesLoading } = usePayrollEntries(week?.id);
   const saveEntries = useSaveEntries();
   const confirmEntry = useConfirmEntry();
+  const bulkConfirm = useBulkConfirmEntries();
   const { downloadCsv, copyTsv } = useExportPayroll();
 
   const submissions = (week as PayrollWeek & { submissions?: PayrollSubmission[] })?.submissions ?? [];
 
-  const entries = allEntries?.map(toLocalEntry) ?? [];
+  const entries = useMemo(() => allEntries?.map(toLocalEntry) ?? [], [allEntries]);
 
   const polesToShow = filterPole === 'all' ? ALL_POLES : [filterPole as Pole];
 
@@ -204,6 +206,21 @@ export default function GlobalViewPage() {
     }
   }, [confirmEntry, tr]);
 
+  const unconfirmedIds = useMemo(
+    () => entries.filter((e) => e.id && !e.confirmed_by_coordinator).map((e) => e.id!),
+    [entries],
+  );
+
+  const handleConfirmAll = useCallback(async () => {
+    if (unconfirmedIds.length === 0) return;
+    try {
+      await bulkConfirm.mutateAsync({ entry_ids: unconfirmedIds, confirmed: true });
+      showToast(tr.payroll.toast.allConfirmed);
+    } catch {
+      showToast(tr.payroll.toast.errorConfirm, 'error');
+    }
+  }, [bulkConfirm, unconfirmedIds, tr]);
+
   const weekLabel = week
     ? `${tr.payroll.weekOf} ${formatShortDate(week.week_start)} ${tr.payroll.to} ${formatShortDate(week.week_end)}`
     : '';
@@ -233,6 +250,12 @@ export default function GlobalViewPage() {
           <p className="mt-1 text-sm text-text-secondary">{weekLabel}</p>
         </div>
         <div className="flex items-center gap-2">
+          {isCoord && unconfirmedIds.length > 0 && (
+            <Button size="sm" onClick={handleConfirmAll} loading={bulkConfirm.isPending}>
+              <CheckCircle2 className="h-4 w-4" />
+              {tr.payroll.actions.confirmAll} ({unconfirmedIds.length})
+            </Button>
+          )}
           <Button variant="secondary" size="sm" onClick={handleExportCsv}>
             <Download className="h-4 w-4" />
             {tr.payroll.actions.exportCsv}

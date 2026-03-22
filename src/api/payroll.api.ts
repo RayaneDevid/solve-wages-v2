@@ -72,6 +72,14 @@ export async function confirmPayrollEntry(payload: {
   return data;
 }
 
+export async function bulkConfirmPayrollEntries(payload: {
+  entry_ids: string[];
+  confirmed: boolean;
+}): Promise<PayrollEntry[]> {
+  const { data } = await apiClient.patch<PayrollEntry[]>('/payroll-entries', payload);
+  return data;
+}
+
 // ── Submit ──
 
 export async function submitPayroll(payload: {

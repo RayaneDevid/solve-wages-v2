@@ -35,9 +35,46 @@ serve(async (req) => {
       return jsonResponse(data);
     }
 
-    // POST — Create user
+    // POST — Create user (single or bulk)
     if (req.method === 'POST') {
       const body = await req.json();
+
+      // Bulk import: { users: [{ discord_id, username, role }] }
+      if (Array.isArray(body.users)) {
+        const users = body.users as { discord_id: string; username: string; role: string }[];
+        if (users.length === 0) {
+          return errorResponse('La liste est vide', 400);
+        }
+
+        const discordIds = users.map((u) => u.discord_id);
+        const { data: existingUsers } = await supabase
+          .from('users')
+          .select('discord_id')
+          .in('discord_id', discordIds);
+
+        const existingSet = new Set((existingUsers ?? []).map((u: { discord_id: string }) => u.discord_id));
+        const toInsert = users.filter((u) => !existingSet.has(u.discord_id));
+        let added = 0;
+
+        if (toInsert.length > 0) {
+          const { error: insertErr } = await supabase
+            .from('users')
+            .insert(toInsert.map((u) => ({
+              discord_id: u.discord_id,
+              username: u.username,
+              role: u.role,
+            })));
+
+          if (insertErr) {
+            return errorResponse(insertErr.message, 500);
+          }
+          added = toInsert.length;
+        }
+
+        return jsonResponse({ added, skipped: users.length - added });
+      }
+
+      // Single create
       const { discord_id, username, role } = body;
 
       if (!discord_id || !username || !role) {

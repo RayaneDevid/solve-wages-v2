@@ -16,8 +16,10 @@ import AddPoleMemberModal from '@/components/members/add-pole-member-modal';
 import BulkImportMembersModal from '@/components/members/bulk-import-members-modal';
 import { showToast } from '@/components/ui/show-toast';
 
-function getDefaultPole(isCoord: boolean, isGerant: boolean, userPole: Pole | null): Pole {
-  if (isCoord) return Pole.MODERATION;
+const ALL_OPTION = 'all';
+
+function getDefaultPole(isCoord: boolean, isGerant: boolean, userPole: Pole | null): string {
+  if (isCoord) return ALL_OPTION;
   if (isGerant) return Pole.ADMINISTRATION;
   return userPole ?? Pole.MODERATION;
 }
@@ -125,14 +127,17 @@ export default function MembersPage() {
     [isCoord, isGerant, userPole],
   );
 
-  const [selectedPole, setSelectedPole] = useState<Pole>(
+  const [selectedPole, setSelectedPole] = useState<string>(
     getDefaultPole(isCoord, isGerant, userPole),
   );
   const [showAddModal, setShowAddModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [deactivateTarget, setDeactivateTarget] = useState<PoleMember | null>(null);
 
-  const { data: rawMembers, isLoading, error } = useMembers(selectedPole);
+  const isAllView = selectedPole === ALL_OPTION;
+  const activePole: Pole | null = isAllView ? null : (selectedPole as Pole);
+
+  const { data: rawMembers, isLoading, error } = useMembers(isAllView ? null : selectedPole);
   const addMember = useAddMember();
   const updateMember = useUpdateMember();
   const deleteMember = useDeleteMember();
@@ -140,20 +145,22 @@ export default function MembersPage() {
 
   const members = useMemo(() => {
     if (!rawMembers) return undefined;
-    return [...rawMembers].sort((a, b) => compareByGradeThenName(a, b, selectedPole));
-  }, [rawMembers, selectedPole]);
+    return [...rawMembers].sort((a, b) => compareByGradeThenName(a, b, a.pole as Pole));
+  }, [rawMembers]);
 
-  const poleOptions = availablePoles.map((p) => ({
-    value: p,
-    label: POLE_LABELS[p],
-  }));
+  const poleOptions = [
+    ...(isCoord ? [{ value: ALL_OPTION, label: tr.members.allStaffs }] : []),
+    ...availablePoles.map((p) => ({ value: p, label: POLE_LABELS[p] })),
+  ];
 
-  const grades = GRADES_BY_POLE[selectedPole] ?? [];
+  const grades = activePole ? (GRADES_BY_POLE[activePole] ?? []) : [];
 
-  const handleAddMember = useCallback(async (data: { discord_username: string; discord_id: string; steam_id: string; grade: string }) => {
+  const handleAddMember = useCallback(async (data: { pole?: string; discord_username: string; discord_id: string; steam_id: string; grade: string }) => {
+    const pole = data.pole ?? activePole;
+    if (!pole) return;
     try {
       await addMember.mutateAsync({
-        pole: selectedPole,
+        pole,
         discord_username: data.discord_username,
         discord_id: data.discord_id,
         steam_id: data.steam_id || undefined,
@@ -164,12 +171,14 @@ export default function MembersPage() {
     } catch {
       showToast(tr.members.toast.errorAdd, 'error');
     }
-  }, [addMember, selectedPole, tr]);
+  }, [addMember, activePole, tr]);
 
-  const handleBulkImport = useCallback(async (parsedMembers: { discord_username: string; discord_id: string; steam_id: string; grade: string }[]) => {
+  const handleBulkImport = useCallback(async (parsedMembers: { discord_username: string; discord_id: string; steam_id: string; grade: string }[], pole?: string) => {
+    const targetPole = pole ?? activePole;
+    if (!targetPole) return;
     try {
       const result = await bulkImport.mutateAsync({
-        pole: selectedPole,
+        pole: targetPole,
         members: parsedMembers.map((m) => ({
           discord_username: m.discord_username,
           discord_id: m.discord_id,
@@ -187,7 +196,7 @@ export default function MembersPage() {
     } catch {
       showToast(tr.members.toast.errorBulk, 'error');
     }
-  }, [bulkImport, selectedPole, tr]);
+  }, [bulkImport, activePole, tr]);
 
   const handleUpdateField = useCallback(async (memberId: string, field: string, value: string) => {
     try {
@@ -235,11 +244,11 @@ export default function MembersPage() {
 
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-3">
-        {availablePoles.length > 1 && (
-          <div className="w-[200px]">
+        {poleOptions.length > 1 && (
+          <div className="w-[220px]">
             <Select
               value={selectedPole}
-              onChange={(e) => setSelectedPole(e.target.value as Pole)}
+              onChange={(e) => setSelectedPole(e.target.value)}
               options={poleOptions}
             />
           </div>
@@ -268,65 +277,74 @@ export default function MembersPage() {
               <TableCell header>{tr.members.fields.discordUsername}</TableCell>
               <TableCell header>{tr.members.fields.discordId}</TableCell>
               <TableCell header>{tr.members.fields.steamId}</TableCell>
+              {isAllView && <TableCell header>Pôle</TableCell>}
               <TableCell header>{tr.members.fields.grade}</TableCell>
               <TableCell header>{tr.members.fields.status}</TableCell>
               <TableCell header>{tr.members.fields.actions}</TableCell>
             </tr>
           </TableHeader>
           <TableBody>
-            {members.map((member) => (
-              <TableRow key={member.id}>
-                <TableCell>
-                  <InlineEditCell
-                    value={member.discord_username}
-                    onSave={(v) => handleUpdateField(member.id, 'discord_username', v)}
-                  />
-                </TableCell>
-                <TableCell>
-                  <span className="font-mono text-xs text-text-secondary">{member.discord_id}</span>
-                </TableCell>
-                <TableCell>
-                  <InlineEditCell
-                    value={member.steam_id ?? ''}
-                    onSave={(v) => handleUpdateField(member.id, 'steam_id', v)}
-                  />
-                </TableCell>
-                <TableCell>
-                  <InlineEditCell
-                    value={member.grade}
-                    onSave={(v) => handleUpdateField(member.id, 'grade', v)}
-                    options={grades.length > 0 ? grades : undefined}
-                    renderValue={(v) => {
-                      const colors = getGradeColor(v);
-                      return (
-                        <span
-                          className="inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium"
-                          style={{ backgroundColor: colors.bg, color: colors.text }}
-                        >
-                          {v || '—'}
-                        </span>
-                      );
-                    }}
-                  />
-                </TableCell>
-                <TableCell>
-                  <Badge variant={member.is_active ? 'success' : 'default'}>
-                    {member.is_active ? tr.members.fields.active : tr.members.fields.inactive}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  {member.is_active && (
-                    <button
-                      onClick={() => setDeactivateTarget(member)}
-                      className="rounded p-1.5 text-text-tertiary transition-colors hover:bg-danger/10 hover:text-danger"
-                      title={tr.common.delete}
-                    >
-                      <UserX className="h-4 w-4" />
-                    </button>
+            {members.map((member) => {
+              const memberGrades = GRADES_BY_POLE[member.pole as Pole] ?? [];
+              return (
+                <TableRow key={member.id}>
+                  <TableCell>
+                    <InlineEditCell
+                      value={member.discord_username}
+                      onSave={(v) => handleUpdateField(member.id, 'discord_username', v)}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <span className="font-mono text-xs text-text-secondary">{member.discord_id}</span>
+                  </TableCell>
+                  <TableCell>
+                    <InlineEditCell
+                      value={member.steam_id ?? ''}
+                      onSave={(v) => handleUpdateField(member.id, 'steam_id', v)}
+                    />
+                  </TableCell>
+                  {isAllView && (
+                    <TableCell>
+                      <Badge variant="default">{POLE_LABELS[member.pole as Pole] ?? member.pole}</Badge>
+                    </TableCell>
                   )}
-                </TableCell>
-              </TableRow>
-            ))}
+                  <TableCell>
+                    <InlineEditCell
+                      value={member.grade}
+                      onSave={(v) => handleUpdateField(member.id, 'grade', v)}
+                      options={memberGrades.length > 0 ? memberGrades : (grades.length > 0 ? grades : undefined)}
+                      renderValue={(v) => {
+                        const colors = getGradeColor(v);
+                        return (
+                          <span
+                            className="inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium"
+                            style={{ backgroundColor: colors.bg, color: colors.text }}
+                          >
+                            {v || '—'}
+                          </span>
+                        );
+                      }}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={member.is_active ? 'success' : 'default'}>
+                      {member.is_active ? tr.members.fields.active : tr.members.fields.inactive}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {member.is_active && (
+                      <button
+                        onClick={() => setDeactivateTarget(member)}
+                        className="rounded p-1.5 text-text-tertiary transition-colors hover:bg-danger/10 hover:text-danger"
+                        title={tr.common.delete}
+                      >
+                        <UserX className="h-4 w-4" />
+                      </button>
+                    )}
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       )}
@@ -336,7 +354,7 @@ export default function MembersPage() {
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
         onAdd={handleAddMember}
-        pole={selectedPole}
+        pole={activePole}
         loading={addMember.isPending}
       />
       <BulkImportMembersModal
@@ -344,6 +362,7 @@ export default function MembersPage() {
         onClose={() => setShowImportModal(false)}
         onImport={handleBulkImport}
         loading={bulkImport.isPending}
+        showPoleSelector={isAllView}
       />
       <ConfirmModal
         isOpen={!!deactivateTarget}

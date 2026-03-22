@@ -1,10 +1,10 @@
 import { useState, useMemo } from 'react';
-import { Plus, Pencil, Trash2, Power, Search } from 'lucide-react';
+import { Plus, Upload, Pencil, Trash2, Power, Search } from 'lucide-react';
 import { t } from '@/i18n';
 import { Role } from '@/types';
 import type { User } from '@/types';
 import { useAuthStore } from '@/stores/auth.store';
-import { useUsers, useCreateUser, useUpdateUser, useDeleteUser } from '@/hooks/queries/use-admin';
+import { useUsers, useCreateUser, useUpdateUser, useDeleteUser, useBulkImportUsers } from '@/hooks/queries/use-admin';
 import Badge from '@/components/ui/badge';
 import { getRoleBadgeVariant } from '@/lib/constants';
 import Button from '@/components/ui/button';
@@ -16,6 +16,7 @@ import { Table, TableHeader, TableBody, TableRow, TableCell } from '@/components
 import AddUserModal from '@/components/admin/add-user-modal';
 import EditUserModal from '@/components/admin/edit-user-modal';
 import DeleteUserModal from '@/components/admin/delete-user-modal';
+import BulkImportUsersModal from '@/components/admin/bulk-import-users-modal';
 
 function formatDateTime(dateStr: string | null, neverLabel: string): string {
   if (!dateStr) return neverLabel;
@@ -33,12 +34,14 @@ export default function AdminPage() {
   const createMutation = useCreateUser();
   const updateMutation = useUpdateUser();
   const deleteMutation = useDeleteUser();
+  const bulkImportMutation = useBulkImportUsers();
 
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showBulkImportModal, setShowBulkImportModal] = useState(false);
   const [editUser, setEditUser] = useState<User | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
 
@@ -125,6 +128,22 @@ export default function AdminPage() {
     );
   }
 
+  function handleBulkImport(users: { discord_id: string; username: string; role: string }[]) {
+    bulkImportMutation.mutate({ users }, {
+      onSuccess: (result) => {
+        showToast(
+          tr.admin.toast.bulkImported
+            .replace('{added}', String(result.added))
+            .replace('{skipped}', String(result.skipped)),
+        );
+        setShowBulkImportModal(false);
+      },
+      onError: () => {
+        showToast(tr.admin.toast.errorBulkImport, 'error');
+      },
+    });
+  }
+
   const isSelf = (user: User) => user.id === currentUser?.id;
 
   if (isLoading) {
@@ -175,10 +194,16 @@ export default function AdminPage() {
             options={statusOptions}
           />
         </div>
-        <Button onClick={() => setShowAddModal(true)} className="ml-auto">
-          <Plus className="h-4 w-4" />
-          {tr.admin.addUser}
-        </Button>
+        <div className="ml-auto flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={() => setShowBulkImportModal(true)}>
+            <Upload className="h-4 w-4" />
+            {tr.members.bulkImport}
+          </Button>
+          <Button onClick={() => setShowAddModal(true)}>
+            <Plus className="h-4 w-4" />
+            {tr.admin.addUser}
+          </Button>
+        </div>
       </div>
 
       {/* Table with glass card */}
@@ -297,6 +322,13 @@ export default function AdminPage() {
         onConfirm={handleDelete}
         loading={deleteMutation.isPending}
         user={deleteTarget}
+      />
+      <BulkImportUsersModal
+        isOpen={showBulkImportModal}
+        onClose={() => setShowBulkImportModal(false)}
+        onImport={handleBulkImport}
+        loading={bulkImportMutation.isPending}
+        existingDiscordIds={existingDiscordIds}
       />
     </div>
   );

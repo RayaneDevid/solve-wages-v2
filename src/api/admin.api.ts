@@ -31,6 +31,13 @@ export async function deleteUser(userId: string) {
   return data;
 }
 
+export async function bulkImportUsers(payload: {
+  users: { discord_id: string; username: string; role: string }[];
+}): Promise<{ added: number; skipped: number }> {
+  const { data } = await apiClient.post<{ added: number; skipped: number }>('/admin-users', payload);
+  return data;
+}
+
 export async function payrollControl(action: 'open' | 'close' | 'lock', weekId?: string) {
   const { data } = await apiClient.post('/admin-payroll-control', {
     action,

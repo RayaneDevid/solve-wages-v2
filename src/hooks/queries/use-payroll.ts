@@ -9,6 +9,7 @@ import {
   submitPayroll,
   controlPayroll,
   confirmPayrollEntry,
+  bulkConfirmPayrollEntries,
   exportPayrollCsv,
   exportPayrollTsv,
 } from '@/api/payroll.api';
@@ -90,7 +91,61 @@ export function useConfirmEntry() {
   return useMutation({
     mutationFn: (payload: { entry_id: string; confirmed: boolean }) =>
       confirmPayrollEntry(payload),
-    onSuccess: () => {
+    onMutate: async ({ entry_id, confirmed }) => {
+      await queryClient.cancelQueries({ queryKey: ['payroll-entries'] });
+      const queries = queryClient.getQueriesData<PayrollEntry[]>({ queryKey: ['payroll-entries'] });
+      const snapshots = queries.map(([key, data]) => [key, data] as const);
+      for (const [key, data] of queries) {
+        if (!data) continue;
+        queryClient.setQueryData(key, data.map((e) =>
+          e.id === entry_id
+            ? { ...e, confirmed_by_coordinator: confirmed, confirmed_at: confirmed ? new Date().toISOString() : null }
+            : e,
+        ));
+      }
+      return { snapshots };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.snapshots) {
+        for (const [key, data] of context.snapshots) {
+          queryClient.setQueryData(key, data);
+        }
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['payroll-entries'] });
+    },
+  });
+}
+
+export function useBulkConfirmEntries() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: { entry_ids: string[]; confirmed: boolean }) =>
+      bulkConfirmPayrollEntries(payload),
+    onMutate: async ({ entry_ids, confirmed }) => {
+      await queryClient.cancelQueries({ queryKey: ['payroll-entries'] });
+      const queries = queryClient.getQueriesData<PayrollEntry[]>({ queryKey: ['payroll-entries'] });
+      const snapshots = queries.map(([key, data]) => [key, data] as const);
+      const idSet = new Set(entry_ids);
+      for (const [key, data] of queries) {
+        if (!data) continue;
+        queryClient.setQueryData(key, data.map((e) =>
+          e.id && idSet.has(e.id)
+            ? { ...e, confirmed_by_coordinator: confirmed, confirmed_at: confirmed ? new Date().toISOString() : null }
+            : e,
+        ));
+      }
+      return { snapshots };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.snapshots) {
+        for (const [key, data] of context.snapshots) {
+          queryClient.setQueryData(key, data);
+        }
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['payroll-entries'] });
     },
   });

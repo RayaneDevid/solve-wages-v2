@@ -5,82 +5,88 @@ import Button from '@/components/ui/button';
 import Select from '@/components/ui/select';
 import { t } from '@/i18n';
 import { cn } from '@/lib/utils';
-import { Pole } from '@/types';
-import { POLE_LABELS } from '@/lib/constants';
+import { ASSIGNABLE_ROLES } from '@/lib/constants';
 import { Table, TableHeader, TableBody, TableRow, TableCell } from '@/components/ui/table';
 
-interface ParsedMember {
-  discord_username: string;
+interface ParsedUser {
   discord_id: string;
-  steam_id: string;
-  grade: string;
+  username: string;
+  role: string;
 }
 
-interface BulkImportMembersModalProps {
+interface BulkImportUsersModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onImport: (members: ParsedMember[], pole?: string) => void;
+  onImport: (users: ParsedUser[]) => void;
   loading?: boolean;
-  showPoleSelector?: boolean;
+  existingDiscordIds: string[];
 }
 
-function parseCsv(raw: string): { members: ParsedMember[]; error: string | null } {
+function parseCsv(raw: string): { users: ParsedUser[]; error: string | null } {
   const lines = raw
     .split('\n')
     .map((l) => l.trim())
     .filter((l) => l.length > 0);
 
   if (lines.length === 0) {
-    return { members: [], error: null };
+    return { users: [], error: null };
   }
 
-  const members: ParsedMember[] = [];
+  const users: ParsedUser[] = [];
 
   for (const line of lines) {
     const parts = line.split(',').map((p) => p.trim());
     if (parts.length < 3) {
-      return { members: [], error: t().members.bulkModal.format };
+      return { users: [], error: 'Format attendu : username,discord_id,role' };
     }
-    members.push({
-      discord_username: parts[0],
-      grade: parts[1],
-      discord_id: parts[2],
-      steam_id: parts[3] ?? '',
+    users.push({
+      username: parts[0],
+      discord_id: parts[1],
+      role: parts[2],
     });
   }
 
-  return { members, error: null };
+  return { users, error: null };
 }
 
-export default function BulkImportMembersModal({ isOpen, onClose, onImport, loading, showPoleSelector }: BulkImportMembersModalProps) {
+export default function BulkImportUsersModal({ isOpen, onClose, onImport, loading, existingDiscordIds }: BulkImportUsersModalProps) {
   const tr = t();
   const [csv, setCsv] = useState('');
-  const [selectedPole, setSelectedPole] = useState('');
+  const [defaultRole, setDefaultRole] = useState<string>('');
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { members, error } = useMemo(() => parseCsv(csv), [csv]);
+  const { users, error } = useMemo(() => parseCsv(csv), [csv]);
 
-  const poleOptions = Object.values(Pole).map((p) => ({
-    value: p,
-    label: POLE_LABELS[p],
+  const usersWithRole = useMemo(() => {
+    if (!defaultRole) return users;
+    return users.map((u) => ({
+      ...u,
+      role: u.role || defaultRole,
+    }));
+  }, [users, defaultRole]);
+
+  const newUsers = useMemo(
+    () => usersWithRole.filter((u) => !existingDiscordIds.includes(u.discord_id)),
+    [usersWithRole, existingDiscordIds],
+  );
+
+  const roleOptions = ASSIGNABLE_ROLES.map((r) => ({
+    value: r,
+    label: tr.roles[r as keyof typeof tr.roles],
   }));
 
   function handleImport() {
-    if (members.length === 0 || error) return;
-    if (showPoleSelector && !selectedPole) return;
-    onImport(members, showPoleSelector ? selectedPole : undefined);
+    if (newUsers.length === 0 || error) return;
+    onImport(newUsers);
     setCsv('');
-    setSelectedPole('');
   }
 
   function handleFileContent(file: File) {
     const reader = new FileReader();
     reader.onload = (e) => {
       const content = e.target?.result;
-      if (typeof content === 'string') {
-        setCsv(content);
-      }
+      if (typeof content === 'string') setCsv(content);
     };
     reader.readAsText(file);
   }
@@ -98,41 +104,29 @@ export default function BulkImportMembersModal({ isOpen, onClose, onImport, load
     if (file) handleFileContent(file);
   }
 
-  function handleDragOver(e: React.DragEvent) {
-    e.preventDefault();
-    setIsDragOver(true);
-  }
-
-  function handleDragLeave() {
-    setIsDragOver(false);
-  }
-
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={tr.members.bulkModal.title} className="max-w-[640px]">
+    <Modal isOpen={isOpen} onClose={onClose} title={tr.admin.bulkImport.title} className="max-w-[640px]">
       <div className="flex flex-col gap-4">
         <div className="text-sm text-text-secondary">
-          <p>{tr.members.bulkModal.description}</p>
+          <p>{tr.admin.bulkImport.description}</p>
           <code className="mt-1 block rounded bg-white/[0.04] px-2 py-1 text-xs text-text-tertiary">
-            {tr.members.bulkModal.format}
+            {tr.admin.bulkImport.format}
           </code>
         </div>
 
-        {showPoleSelector && (
-          <Select
-            label="Pôle"
-            value={selectedPole}
-            onChange={(e) => setSelectedPole(e.target.value)}
-            options={poleOptions}
-            placeholder="Sélectionner un pôle"
-            required
-          />
-        )}
+        <Select
+          label={tr.admin.bulkImport.defaultRole}
+          value={defaultRole}
+          onChange={(e) => setDefaultRole(e.target.value)}
+          options={roleOptions}
+          placeholder={tr.admin.bulkImport.defaultRolePlaceholder}
+        />
 
-        {/* Drop zone / file picker */}
+        {/* Drop zone */}
         <div
           onDrop={handleDrop}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
+          onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
+          onDragLeave={() => setIsDragOver(false)}
           onClick={() => fileInputRef.current?.click()}
           className={cn(
             'flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 border-dashed px-4 py-5 transition-colors',
@@ -152,43 +146,46 @@ export default function BulkImportMembersModal({ isOpen, onClose, onImport, load
           />
         </div>
 
-        {/* Or paste textarea */}
         <textarea
           value={csv}
           onChange={(e) => setCsv(e.target.value)}
-          placeholder={tr.members.bulkModal.placeholder}
+          placeholder={tr.admin.bulkImport.placeholder}
           rows={4}
           className="w-full rounded-lg border border-border-secondary bg-white/[0.03] px-3 py-2 text-sm text-text-primary placeholder:text-text-tertiary focus:border-accent/40 focus:outline-none focus:ring-1 focus:ring-accent/20"
         />
         {error && <p className="text-xs text-danger">{error}</p>}
-        {members.length > 0 && !error && (
+        {usersWithRole.length > 0 && !error && (
           <div>
             <p className="mb-2 text-sm font-medium text-text-secondary">
-              {tr.members.bulkModal.preview} — {tr.members.bulkModal.importCount.replace('{count}', String(members.length))}
+              {tr.members.bulkModal.preview} — {newUsers.length} {tr.admin.bulkImport.toImport}
+              {usersWithRole.length !== newUsers.length && (
+                <span className="text-text-tertiary"> ({usersWithRole.length - newUsers.length} {tr.admin.bulkImport.alreadyExist})</span>
+              )}
             </p>
             <div className="max-h-[200px] overflow-y-auto">
               <Table>
                 <TableHeader>
                   <tr>
-                    <TableCell header>{tr.members.fields.discordUsername}</TableCell>
-                    <TableCell header>{tr.members.fields.grade}</TableCell>
-                    <TableCell header>{tr.members.fields.discordId}</TableCell>
-                    <TableCell header>{tr.members.fields.steamId}</TableCell>
+                    <TableCell header>{tr.admin.fields.username}</TableCell>
+                    <TableCell header>{tr.admin.fields.discordId}</TableCell>
+                    <TableCell header>{tr.admin.fields.role}</TableCell>
                   </tr>
                 </TableHeader>
                 <TableBody>
-                  {members.map((m, i) => (
-                    <TableRow key={i}>
-                      <TableCell>{m.discord_username}</TableCell>
-                      <TableCell>{m.grade}</TableCell>
-                      <TableCell>
-                        <span className="font-mono text-xs">{m.discord_id}</span>
-                      </TableCell>
-                      <TableCell>
-                        <span className="font-mono text-xs text-text-secondary">{m.steam_id || '—'}</span>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {usersWithRole.map((u, i) => {
+                    const exists = existingDiscordIds.includes(u.discord_id);
+                    return (
+                      <TableRow key={i} className={exists ? 'opacity-40 line-through' : ''}>
+                        <TableCell>{u.username}</TableCell>
+                        <TableCell>
+                          <span className="font-mono text-xs">{u.discord_id}</span>
+                        </TableCell>
+                        <TableCell>
+                          {tr.roles[u.role as keyof typeof tr.roles] ?? u.role}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
@@ -198,8 +195,8 @@ export default function BulkImportMembersModal({ isOpen, onClose, onImport, load
           <Button type="button" variant="ghost" onClick={onClose}>
             {tr.common.cancel}
           </Button>
-          <Button onClick={handleImport} disabled={members.length === 0 || !!error || (showPoleSelector && !selectedPole)} loading={loading}>
-            {tr.members.bulkModal.import} ({members.length})
+          <Button onClick={handleImport} disabled={newUsers.length === 0 || !!error} loading={loading}>
+            {tr.admin.bulkImport.import} ({newUsers.length})
           </Button>
         </div>
       </div>

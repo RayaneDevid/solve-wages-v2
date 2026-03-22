@@ -277,17 +277,59 @@ serve(async (req) => {
       return jsonResponse(upserted ?? []);
     }
 
-    // --- PATCH (confirm/unconfirm single entry — coordinateur only) ---
+    // --- PATCH (confirm/unconfirm entries — coordinateur only) ---
     if (req.method === 'PATCH') {
       if (user.role !== 'coordinateur') {
         return errorResponse('Seul le coordinateur peut confirmer les entrées', 403);
       }
 
       const body = await req.json();
-      const { entry_id, confirmed } = body;
+      const { entry_id, entry_ids, confirmed } = body;
 
-      if (!entry_id || typeof confirmed !== 'boolean') {
-        return errorResponse('entry_id et confirmed sont requis', 400);
+      if (typeof confirmed !== 'boolean') {
+        return errorResponse('confirmed est requis', 400);
+      }
+
+      // Bulk confirm: entry_ids array
+      if (Array.isArray(entry_ids) && entry_ids.length > 0) {
+        // Verify all entries belong to a non-locked week
+        const { data: entries, error: fetchErr } = await supabase
+          .from('payroll_entries')
+          .select('id, payroll_week_id')
+          .in('id', entry_ids);
+
+        if (fetchErr) return errorResponse(fetchErr.message, 500);
+        if (!entries || entries.length === 0) return errorResponse('Aucune entrée trouvée', 404);
+
+        const weekIds = [...new Set(entries.map((e: { payroll_week_id: string }) => e.payroll_week_id))];
+        const { data: weeks, error: weeksErr } = await supabase
+          .from('payroll_weeks')
+          .select('id, status')
+          .in('id', weekIds);
+
+        if (weeksErr) return errorResponse(weeksErr.message, 500);
+        if (weeks?.some((w: { status: string }) => w.status === 'locked')) {
+          return errorResponse('Semaine verrouillée', 400);
+        }
+
+        const now = new Date().toISOString();
+        const { data: updated, error: updateErr } = await supabase
+          .from('payroll_entries')
+          .update({
+            confirmed_by_coordinator: confirmed,
+            confirmed_at: confirmed ? now : null,
+          })
+          .in('id', entry_ids)
+          .select();
+
+        if (updateErr) return errorResponse(updateErr.message, 500);
+
+        return jsonResponse(updated ?? []);
+      }
+
+      // Single confirm: entry_id
+      if (!entry_id) {
+        return errorResponse('entry_id ou entry_ids est requis', 400);
       }
 
       const { data: entry, error: fetchErr } = await supabase

@@ -8,11 +8,11 @@ import {
 } from '@/api/members.api';
 import type { BulkImportResult } from '@/types';
 
-export function useMembers(pole?: string) {
+export function useMembers(pole?: string | null) {
   return useQuery({
-    queryKey: ['pole-members', pole],
-    queryFn: () => getMembers(pole),
-    enabled: !!pole,
+    queryKey: ['pole-members', pole ?? 'all'],
+    queryFn: () => getMembers(pole ?? undefined),
+    enabled: pole !== undefined,
   });
 }
 
