@@ -4,7 +4,7 @@ import { t } from '@/i18n';
 import { Pole, type PoleMember } from '@/types';
 import { useAuthStore } from '@/stores/auth.store';
 import { isCoordinateur, isGerantStaff, getPoleForRole } from '@/lib/utils';
-import { POLE_LABELS, GRADES_BY_POLE, getGradeColor, compareByGradeThenName, getGradeGlobalPriority } from '@/lib/constants';
+import { POLE_LABELS, GRADES_BY_POLE, getGradeColor, compareByGradeThenName, GRADE_TO_ROLE, ROLE_HIERARCHY } from '@/lib/constants';
 import { useMembers, useAddMember, useUpdateMember, useDeleteMember, useBulkImport } from '@/hooks/queries/use-members';
 import Button from '@/components/ui/button';
 import Select from '@/components/ui/select';
@@ -17,6 +17,17 @@ import BulkImportMembersModal from '@/components/members/bulk-import-members-mod
 import { showToast } from '@/components/ui/show-toast';
 
 const ALL_OPTION = 'all';
+
+interface MergedMember {
+  discord_username: string;
+  discord_id: string;
+  steam_id: string | null;
+  is_active: boolean;
+  /** All entries for this user (one per pole) */
+  entries: PoleMember[];
+  /** Best (highest) role hierarchy value for sorting */
+  bestPriority: number;
+}
 
 function getDefaultPole(isCoord: boolean, isGerant: boolean, userPole: Pole | null): string {
   if (isCoord) return ALL_OPTION;
@@ -145,16 +156,51 @@ export default function MembersPage() {
 
   const members = useMemo(() => {
     if (!rawMembers) return undefined;
-    if (isAllView) {
-      return [...rawMembers].sort((a, b) => {
-        const pa = getGradeGlobalPriority(a.grade);
-        const pb = getGradeGlobalPriority(b.grade);
-        if (pa !== pb) return pa - pb;
-        return a.discord_username.localeCompare(b.discord_username);
-      });
+    if (!isAllView) {
+      return [...rawMembers].sort((a, b) => compareByGradeThenName(a, b, a.pole as Pole));
     }
-    return [...rawMembers].sort((a, b) => compareByGradeThenName(a, b, a.pole as Pole));
+    return [...rawMembers].sort((a, b) => {
+      const roleA = GRADE_TO_ROLE[a.grade];
+      const roleB = GRADE_TO_ROLE[b.grade];
+      const pa = roleA ? ROLE_HIERARCHY[roleA] : 99;
+      const pb = roleB ? ROLE_HIERARCHY[roleB] : 99;
+      if (pa !== pb) return pa - pb;
+      return a.discord_username.localeCompare(b.discord_username);
+    });
   }, [rawMembers, isAllView]);
+
+  /** In all-view, merge members with the same discord_id into one row */
+  const mergedMembers = useMemo(() => {
+    if (!isAllView || !members) return null;
+    const map = new Map<string, MergedMember>();
+    for (const m of members) {
+      const role = GRADE_TO_ROLE[m.grade];
+      const priority = role ? ROLE_HIERARCHY[role] : 99;
+      const existing = map.get(m.discord_id);
+      if (existing) {
+        existing.entries.push(m);
+        if (priority < existing.bestPriority) {
+          existing.bestPriority = priority;
+          existing.discord_username = m.discord_username;
+          existing.steam_id = m.steam_id ?? existing.steam_id;
+        }
+        if (m.is_active) existing.is_active = true;
+      } else {
+        map.set(m.discord_id, {
+          discord_username: m.discord_username,
+          discord_id: m.discord_id,
+          steam_id: m.steam_id,
+          is_active: m.is_active,
+          entries: [m],
+          bestPriority: priority,
+        });
+      }
+    }
+    return [...map.values()].sort((a, b) => {
+      if (a.bestPriority !== b.bestPriority) return a.bestPriority - b.bestPriority;
+      return a.discord_username.localeCompare(b.discord_username);
+    });
+  }, [isAllView, members]);
 
   const poleOptions = [
     ...(isCoord ? [{ value: ALL_OPTION, label: tr.members.allStaffs }] : []),
@@ -312,75 +358,62 @@ export default function MembersPage() {
       </div>
 
       {/* Table */}
-      {!members || members.length === 0 ? (
-        <div className="glass-card rounded-xl p-12 text-center text-sm text-text-tertiary">
-          {tr.members.noMembers}
-        </div>
-      ) : (
-        <Table>
-          <TableHeader>
-            <tr>
-              <TableCell header>{tr.members.fields.discordUsername}</TableCell>
-              <TableCell header>{tr.members.fields.discordId}</TableCell>
-              <TableCell header>{tr.members.fields.steamId}</TableCell>
-              {isAllView && <TableCell header>Pôle</TableCell>}
-              <TableCell header>{tr.members.fields.grade}</TableCell>
-              <TableCell header>{tr.members.fields.status}</TableCell>
-              <TableCell header>{tr.members.fields.actions}</TableCell>
-            </tr>
-          </TableHeader>
-          <TableBody>
-            {members.map((member) => {
-              const memberGrades = GRADES_BY_POLE[member.pole as Pole] ?? [];
-              return (
-                <TableRow key={member.id}>
+      {isAllView ? (
+        /* Merged view for "Tous les staffs" */
+        !mergedMembers || mergedMembers.length === 0 ? (
+          <div className="glass-card rounded-xl p-12 text-center text-sm text-text-tertiary">
+            {tr.members.noMembers}
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <tr>
+                <TableCell header>{tr.members.fields.discordUsername}</TableCell>
+                <TableCell header>{tr.members.fields.discordId}</TableCell>
+                <TableCell header>{tr.members.fields.steamId}</TableCell>
+                <TableCell header>Pôle / Grade</TableCell>
+                <TableCell header>{tr.members.fields.status}</TableCell>
+                <TableCell header>{tr.members.fields.actions}</TableCell>
+              </tr>
+            </TableHeader>
+            <TableBody>
+              {mergedMembers.map((merged) => (
+                <TableRow key={merged.discord_id}>
                   <TableCell>
-                    <InlineEditCell
-                      value={member.discord_username}
-                      onSave={(v) => handleUpdateField(member.id, 'discord_username', v)}
-                    />
+                    <span className="font-medium text-sm">{merged.discord_username}</span>
                   </TableCell>
                   <TableCell>
-                    <span className="font-mono text-xs text-text-secondary">{member.discord_id}</span>
+                    <span className="font-mono text-xs text-text-secondary">{merged.discord_id}</span>
                   </TableCell>
                   <TableCell>
-                    <InlineEditCell
-                      value={member.steam_id ?? ''}
-                      onSave={(v) => handleUpdateField(member.id, 'steam_id', v)}
-                    />
+                    <span className="text-xs text-text-secondary">{merged.steam_id ?? '—'}</span>
                   </TableCell>
-                  {isAllView && (
-                    <TableCell>
-                      <Badge variant="default">{POLE_LABELS[member.pole as Pole] ?? member.pole}</Badge>
-                    </TableCell>
-                  )}
                   <TableCell>
-                    <InlineEditCell
-                      value={member.grade}
-                      onSave={(v) => handleUpdateField(member.id, 'grade', v)}
-                      options={memberGrades.length > 0 ? memberGrades : (grades.length > 0 ? grades : undefined)}
-                      renderValue={(v) => {
-                        const colors = getGradeColor(v);
+                    <div className="flex flex-wrap gap-1">
+                      {merged.entries.map((entry) => {
+                        const colors = getGradeColor(entry.grade);
                         return (
                           <span
-                            className="inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium"
+                            key={entry.id}
+                            className="inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium"
                             style={{ backgroundColor: colors.bg, color: colors.text }}
                           >
-                            {v || '—'}
+                            {entry.grade}
+                            <span className="opacity-50">({POLE_LABELS[entry.pole as Pole] ?? entry.pole})</span>
                           </span>
                         );
-                      }}
-                    />
+                      })}
+                    </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={member.is_active ? 'success' : 'default'}>
-                      {member.is_active ? tr.members.fields.active : tr.members.fields.inactive}
+                    <Badge variant={merged.is_active ? 'success' : 'default'}>
+                      {merged.is_active ? tr.members.fields.active : tr.members.fields.inactive}
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    {member.is_active && (
+                    {merged.is_active && merged.entries.length === 1 && (
                       <button
-                        onClick={() => setDeactivateTarget(member)}
+                        onClick={() => setDeactivateTarget(merged.entries[0])}
                         className="rounded p-1.5 text-text-tertiary transition-colors hover:bg-danger/10 hover:text-danger"
                         title={tr.common.delete}
                       >
@@ -389,10 +422,88 @@ export default function MembersPage() {
                     )}
                   </TableCell>
                 </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+              ))}
+            </TableBody>
+          </Table>
+        )
+      ) : (
+        /* Single-pole view */
+        !members || members.length === 0 ? (
+          <div className="glass-card rounded-xl p-12 text-center text-sm text-text-tertiary">
+            {tr.members.noMembers}
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <tr>
+                <TableCell header>{tr.members.fields.discordUsername}</TableCell>
+                <TableCell header>{tr.members.fields.discordId}</TableCell>
+                <TableCell header>{tr.members.fields.steamId}</TableCell>
+                <TableCell header>{tr.members.fields.grade}</TableCell>
+                <TableCell header>{tr.members.fields.status}</TableCell>
+                <TableCell header>{tr.members.fields.actions}</TableCell>
+              </tr>
+            </TableHeader>
+            <TableBody>
+              {members.map((member) => {
+                const memberGrades = GRADES_BY_POLE[member.pole as Pole] ?? [];
+                return (
+                  <TableRow key={member.id}>
+                    <TableCell>
+                      <InlineEditCell
+                        value={member.discord_username}
+                        onSave={(v) => handleUpdateField(member.id, 'discord_username', v)}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <span className="font-mono text-xs text-text-secondary">{member.discord_id}</span>
+                    </TableCell>
+                    <TableCell>
+                      <InlineEditCell
+                        value={member.steam_id ?? ''}
+                        onSave={(v) => handleUpdateField(member.id, 'steam_id', v)}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <InlineEditCell
+                        value={member.grade}
+                        onSave={(v) => handleUpdateField(member.id, 'grade', v)}
+                        options={memberGrades.length > 0 ? memberGrades : (grades.length > 0 ? grades : undefined)}
+                        renderValue={(v) => {
+                          const colors = getGradeColor(v);
+                          return (
+                            <span
+                              className="inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium"
+                              style={{ backgroundColor: colors.bg, color: colors.text }}
+                            >
+                              {v || '—'}
+                            </span>
+                          );
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={member.is_active ? 'success' : 'default'}>
+                        {member.is_active ? tr.members.fields.active : tr.members.fields.inactive}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {member.is_active && (
+                        <button
+                          onClick={() => setDeactivateTarget(member)}
+                          className="rounded p-1.5 text-text-tertiary transition-colors hover:bg-danger/10 hover:text-danger"
+                          title={tr.common.delete}
+                        >
+                          <UserX className="h-4 w-4" />
+                        </button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        )
       )}
 
       {/* Modals */}
