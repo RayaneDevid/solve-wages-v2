@@ -114,6 +114,40 @@ export const ROLE_LABELS: Record<Role, string> = {
   [Role.CM]: 'CM',
 };
 
+// Maps grade display names (from GRADES_BY_POLE / CSV) → Role enum values
+export const GRADE_TO_ROLE: Record<string, Role> = {
+  'Coordinateur': Role.COORDINATEUR,
+  'Gérant Serveur': Role.GERANT_SERVEUR,
+  'Gérant Staff': Role.GERANT_STAFF,
+  'Gérant RP': Role.GERANT_RP,
+  'Gérant Equilibrage': Role.GERANT_EQUILIBRAGE,
+  'Administrateur': Role.ADMINISTRATEUR,
+  'Responsable Modération': Role.RESP_MODERATION,
+  'Modérateur Senior': Role.MODERATEUR_SENIOR,
+  'Modérateur': Role.MODERATEUR,
+  'Responsable Animation': Role.RESP_ANIMATION,
+  'Animateur Senior': Role.ANIMATEUR_SENIOR,
+  'Animateur': Role.ANIMATEUR,
+  'Responsable MJ': Role.RESP_MJ,
+  'MJ Senior': Role.MJ_SENIOR,
+  'MJ': Role.MJ,
+  'Responsable Douane': Role.RESP_DOUANE,
+  'Douanier Senior': Role.DOUANIER_SENIOR,
+  'Douanier': Role.DOUANIER,
+  'Responsable Builder': Role.RESP_BUILDER,
+  'Builder': Role.BUILDER,
+  'Responsable CM': Role.RESP_CM,
+  'CM': Role.CM,
+  'Responsable Lore': Role.RESP_LORE,
+  'Lore': Role.LORE,
+  'Equilibrage': Role.EQUILIBRAGE_PVP,
+  'Référent Streamer': Role.EQUILIBRAGE_PVP, // closest mapping, may need its own role
+};
+
+export function gradeToRole(grade: string): Role | null {
+  return GRADE_TO_ROLE[grade] ?? null;
+}
+
 export const POLE_LABELS: Record<Pole, string> = {
   [Pole.GERANCE]: 'Gérance',
   [Pole.ADMINISTRATION]: 'Administration',

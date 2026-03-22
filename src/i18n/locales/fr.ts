@@ -202,7 +202,7 @@ const fr = {
     bulkImport: {
       title: 'Import CSV utilisateurs',
       description: 'Importez des utilisateurs en masse. Format attendu :',
-      format: 'username,discord_id,role',
+      format: 'username,grade,discord_id,steam_id (CSV membres) ou username,discord_id,role',
       placeholder: 'Collez votre CSV ici...',
       defaultRole: 'Rôle par défaut',
       defaultRolePlaceholder: 'Si le CSV ne contient pas le rôle...',

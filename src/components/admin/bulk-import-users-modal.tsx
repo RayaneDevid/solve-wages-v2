@@ -5,7 +5,7 @@ import Button from '@/components/ui/button';
 import Select from '@/components/ui/select';
 import { t } from '@/i18n';
 import { cn } from '@/lib/utils';
-import { ASSIGNABLE_ROLES } from '@/lib/constants';
+import { ASSIGNABLE_ROLES, gradeToRole } from '@/lib/constants';
 import { Table, TableHeader, TableBody, TableRow, TableCell } from '@/components/ui/table';
 
 interface ParsedUser {
@@ -22,7 +22,7 @@ interface BulkImportUsersModalProps {
   existingDiscordIds: string[];
 }
 
-function parseCsv(raw: string): { users: ParsedUser[]; error: string | null } {
+function parseCsv(raw: string, defaultRole: string): { users: ParsedUser[]; error: string | null } {
   const lines = raw
     .split('\n')
     .map((l) => l.trim())
@@ -37,13 +37,29 @@ function parseCsv(raw: string): { users: ParsedUser[]; error: string | null } {
   for (const line of lines) {
     const parts = line.split(',').map((p) => p.trim());
     if (parts.length < 3) {
-      return { users: [], error: 'Format attendu : username,discord_id,role' };
+      return { users: [], error: 'Format attendu : username,grade,discord_id[,steam_id] ou username,discord_id,role' };
     }
-    users.push({
-      username: parts[0],
-      discord_id: parts[1],
-      role: parts[2],
-    });
+
+    // Detect format: if parts[2] looks like a discord_id (all digits, 17-20 chars), it's members CSV format
+    // members format: username,grade,discord_id,steam_id
+    // admin format:   username,discord_id,role
+    const isMembersFormat = /^\d{17,20}$/.test(parts[2]);
+
+    if (isMembersFormat) {
+      const grade = parts[1];
+      const role = gradeToRole(grade) ?? defaultRole;
+      users.push({
+        username: parts[0],
+        discord_id: parts[2],
+        role,
+      });
+    } else {
+      users.push({
+        username: parts[0],
+        discord_id: parts[1],
+        role: parts[2] || defaultRole,
+      });
+    }
   }
 
   return { users, error: null };
@@ -56,7 +72,7 @@ export default function BulkImportUsersModal({ isOpen, onClose, onImport, loadin
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { users, error } = useMemo(() => parseCsv(csv), [csv]);
+  const { users, error } = useMemo(() => parseCsv(csv, defaultRole), [csv, defaultRole]);
 
   const usersWithRole = useMemo(() => {
     if (!defaultRole) return users;
