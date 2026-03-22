@@ -18,6 +18,68 @@ import { showToast } from '@/components/ui/show-toast';
 
 const ALL_OPTION = 'all';
 
+function MergedGradeBadge({ entry, gradeOptions, onChangeGrade, onDeactivate }: {
+  entry: PoleMember;
+  gradeOptions: string[];
+  onChangeGrade: (grade: string) => void;
+  onDeactivate: () => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(entry.grade);
+  const colors = getGradeColor(entry.grade);
+
+  if (editing) {
+    return (
+      <div className="flex items-center gap-1">
+        <select
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          className="h-7 rounded border border-border-secondary bg-white/[0.05] px-1.5 text-xs text-text-primary focus:border-accent/40 focus:outline-none"
+          autoFocus
+        >
+          {gradeOptions.map((o) => (
+            <option key={o} value={o}>{o}</option>
+          ))}
+        </select>
+        <button
+          onClick={() => { if (draft !== entry.grade) onChangeGrade(draft); setEditing(false); }}
+          className="rounded p-0.5 text-success hover:bg-success/10"
+        >
+          <Check className="h-3.5 w-3.5" />
+        </button>
+        <button onClick={() => { setDraft(entry.grade); setEditing(false); }} className="rounded p-0.5 text-text-tertiary hover:bg-white/[0.05]">
+          <X className="h-3.5 w-3.5" />
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <span
+      className="group inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium"
+      style={{ backgroundColor: colors.bg, color: colors.text }}
+    >
+      <button
+        onClick={() => { setDraft(entry.grade); setEditing(true); }}
+        className="hover:underline"
+        title="Modifier le grade"
+      >
+        {entry.grade}
+      </button>
+      <span className="opacity-50">({POLE_LABELS[entry.pole as Pole] ?? entry.pole})</span>
+      {entry.is_active && (
+        <button
+          onClick={onDeactivate}
+          className="ml-0.5 rounded-full p-0.5 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-black/20"
+          title="Retirer ce rôle"
+        >
+          <X className="h-3 w-3" />
+        </button>
+      )}
+    </span>
+  );
+}
+
 interface MergedMember {
   discord_username: string;
   discord_id: string;
@@ -389,18 +451,17 @@ export default function MembersPage() {
                     <span className="text-xs text-text-secondary">{merged.steam_id ?? '—'}</span>
                   </TableCell>
                   <TableCell>
-                    <div className="flex flex-wrap gap-1">
+                    <div className="flex flex-wrap gap-1.5">
                       {merged.entries.map((entry) => {
-                        const colors = getGradeColor(entry.grade);
+                        const entryGrades = GRADES_BY_POLE[entry.pole as Pole] ?? [];
                         return (
-                          <span
+                          <MergedGradeBadge
                             key={entry.id}
-                            className="inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium"
-                            style={{ backgroundColor: colors.bg, color: colors.text }}
-                          >
-                            {entry.grade}
-                            <span className="opacity-50">({POLE_LABELS[entry.pole as Pole] ?? entry.pole})</span>
-                          </span>
+                            entry={entry}
+                            gradeOptions={entryGrades}
+                            onChangeGrade={(v) => handleUpdateField(entry.id, 'grade', v)}
+                            onDeactivate={() => setDeactivateTarget(entry)}
+                          />
                         );
                       })}
                     </div>
@@ -410,17 +471,7 @@ export default function MembersPage() {
                       {merged.is_active ? tr.members.fields.active : tr.members.fields.inactive}
                     </Badge>
                   </TableCell>
-                  <TableCell>
-                    {merged.is_active && merged.entries.length === 1 && (
-                      <button
-                        onClick={() => setDeactivateTarget(merged.entries[0])}
-                        className="rounded p-1.5 text-text-tertiary transition-colors hover:bg-danger/10 hover:text-danger"
-                        title={tr.common.delete}
-                      >
-                        <UserX className="h-4 w-4" />
-                      </button>
-                    )}
-                  </TableCell>
+                  <TableCell>{''}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
