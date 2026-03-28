@@ -21,12 +21,6 @@ const POLE_ORDER: Pole[] = [
   Pole.COMMUNITY_MANAGER, Pole.STREAMER,
 ];
 
-const ROLES_BY_POLE = POLE_ORDER.map((pole) => ({
-  pole,
-  label: POLE_LABELS[pole],
-  roles: ASSIGNABLE_ROLES.filter((r) => ROLE_TO_POLE[r] === pole),
-})).filter((g) => g.roles.length > 0);
-
 export default function EditUserModal({
   isOpen,
   onClose,
@@ -35,6 +29,11 @@ export default function EditUserModal({
   user,
 }: EditUserModalProps) {
   const tr = t();
+  const rolesByPole = POLE_ORDER.map((pole) => ({
+    pole,
+    label: POLE_LABELS[pole],
+    roles: ASSIGNABLE_ROLES.filter((r) => ROLE_TO_POLE[r] === pole),
+  })).filter((g) => g.roles.length > 0);
   const [selectedRoles, setSelectedRoles] = useState<Set<Role>>(new Set());
   const [isActive, setIsActive] = useState(true);
 
@@ -83,7 +82,7 @@ export default function EditUserModal({
           <span className="text-sm font-medium text-text-secondary">{tr.admin.fields.role}</span>
           <div className="max-h-64 overflow-y-auto rounded-lg border border-white/[0.08] bg-white/[0.03] p-3">
             <div className="flex flex-col gap-4">
-              {ROLES_BY_POLE.map(({ pole, label, roles }) => (
+              {rolesByPole.map(({ pole, label, roles }) => (
                 <div key={pole}>
                   <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-text-tertiary">
                     {label}
