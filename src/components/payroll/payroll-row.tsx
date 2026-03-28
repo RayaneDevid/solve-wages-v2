@@ -12,6 +12,7 @@ interface PayrollRowProps {
   editable: boolean;
   weekStatus: 'open' | 'closed' | 'locked';
   isCoordinator?: boolean;
+  showTotal?: boolean;
   onUpdate: (discordId: string, field: string, value: string | number | boolean) => void;
   onDelete: (discordId: string) => void;
   onConfirm?: (entryId: string, confirmed: boolean) => void;
@@ -74,6 +75,7 @@ export default function PayrollRow({
   editable,
   weekStatus,
   isCoordinator,
+  showTotal,
   onUpdate,
   onDelete,
   onConfirm,
@@ -147,6 +149,13 @@ export default function PayrollRow({
           />
         </td>
       ))}
+
+      {/* Total (modération uniquement) */}
+      {showTotal && (
+        <td className="px-3 py-2.5 text-center text-sm font-medium text-text-primary">
+          {(entry.tickets_ig ?? 0) + (entry.tickets_discord ?? 0) + (entry.bda_count ?? 0)}
+        </td>
+      )}
 
       {/* Commentaire */}
       <td className="px-3 py-2.5 text-sm">

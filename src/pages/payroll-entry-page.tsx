@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from 'react';
-import { Send, Save, EyeOff } from 'lucide-react';
+import { Send, Save, EyeOff, Eye } from 'lucide-react';
 import { t } from '@/i18n';
 import { Role, Pole, type PayrollEntry, type PayrollWeek, type PayrollSubmission } from '@/types';
 import { useAuthStore } from '@/stores/auth.store';
@@ -117,10 +117,18 @@ export default function PayrollEntryPage() {
   }, []);
 
   const zeroActiveCount = localEntries.filter((e) => e.montant === 0 && !e.is_inactive).length;
+  const inactiveCount = localEntries.filter((e) => e.is_inactive).length;
 
   function handleMarkZeroInactive() {
     setLocalEntries((prev) =>
       prev.map((e) => (e.montant === 0 && !e.is_inactive ? { ...e, is_inactive: true, _dirty: true } : e)),
+    );
+    setHasLocalChanges(true);
+  }
+
+  function handleMarkAllActive() {
+    setLocalEntries((prev) =>
+      prev.map((e) => (e.is_inactive ? { ...e, is_inactive: false, _dirty: true } : e)),
     );
     setHasLocalChanges(true);
   }
@@ -292,6 +300,12 @@ export default function PayrollEntryPage() {
         )}
         {editable && (
           <div className="ml-auto flex items-center gap-2">
+            {inactiveCount > 0 && (
+              <Button size="sm" variant="ghost" onClick={handleMarkAllActive}>
+                <Eye className="h-4 w-4" />
+                {tr.payroll.actions.markAllActive} ({inactiveCount})
+              </Button>
+            )}
             {zeroActiveCount > 0 && (
               <Button size="sm" variant="ghost" onClick={handleMarkZeroInactive}>
                 <EyeOff className="h-4 w-4" />

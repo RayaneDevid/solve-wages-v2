@@ -2,7 +2,8 @@ import { useMemo } from 'react';
 import { t } from '@/i18n';
 import { formatShortDate } from '@/lib/utils';
 import { compareByGradeThenName, getPoleCounterFields } from '@/lib/constants';
-import type { Pole, PayrollEntry } from '@/types';
+import { Pole } from '@/types';
+import type { PayrollEntry } from '@/types';
 import PayrollRow from './payroll-row';
 
 export interface LocalPayrollEntry extends Omit<PayrollEntry, 'id' | 'payroll_week_id' | 'submission_id' | 'filled_by_id' | 'created_at' | 'updated_at'> {
@@ -38,6 +39,7 @@ export default function PayrollTable({
 }: PayrollTableProps) {
   const tr = t();
   const counters = getPoleCounterFields(pole);
+  const showTotal = pole === Pole.MODERATION;
   const canDeleteOrAdd = editable && weekStatus !== 'locked';
 
   const sortedEntries = useMemo(
@@ -80,6 +82,11 @@ export default function PayrollTable({
                 </div>
               </th>
             ))}
+            {showTotal && (
+              <th className="px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-text-secondary">
+                {tr.common.total}
+              </th>
+            )}
             <th className="px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-text-secondary">
               {fieldLabels.commentaire}
             </th>
@@ -108,7 +115,7 @@ export default function PayrollTable({
           {sortedEntries.length === 0 ? (
             <tr>
               <td
-                colSpan={4 + counters.length + 4 + (isCoordinator ? 1 : 0) + (canDeleteOrAdd ? 1 : 0)}
+                colSpan={4 + counters.length + (showTotal ? 1 : 0) + 4 + (isCoordinator ? 1 : 0) + (canDeleteOrAdd ? 1 : 0)}
                 className="px-5 py-12 text-center text-sm text-text-tertiary"
               >
                 {tr.payroll.noEntries}
@@ -123,6 +130,7 @@ export default function PayrollTable({
                 editable={editable}
                 weekStatus={weekStatus}
                 isCoordinator={isCoordinator}
+                showTotal={showTotal}
                 onUpdate={onUpdate}
                 onDelete={onDelete}
                 onConfirm={onConfirm}

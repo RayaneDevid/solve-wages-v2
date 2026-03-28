@@ -108,6 +108,7 @@ const fr = {
       lockWeek: 'Verrouiller la semaine',
       confirmAll: 'Tout confirmer',
       markZeroInactive: 'Marquer inactifs (0 cr.)',
+      markAllActive: 'Réactiver tous',
       copyBotLink: 'Copier lien bot',
       reopenWeek: 'Rouvrir la saisie',
     },
