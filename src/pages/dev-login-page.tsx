@@ -14,6 +14,7 @@ function createFakeUser(role: Role): User {
     username: `Dev ${ROLE_LABELS[role]}`,
     avatar_url: null,
     role,
+    roles: [role],
     is_active: true,
     last_login_at: new Date().toISOString(),
     created_at: new Date().toISOString(),
