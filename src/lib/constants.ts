@@ -273,11 +273,22 @@ const GERANCE_GRADE_ORDER: Record<string, number> = {
   'Gérant Equilibrage': 5,
 };
 
+const RESPONSABLES_GRADE_ORDER: Record<string, number> = {
+  'Responsable Modération': 0,
+  'Responsable MJ': 1,
+  'Responsable Lore': 2,
+  'Responsable Douane': 3,
+  'Responsable CM': 4,
+  'Responsable Builder': 5,
+  'Responsable Animation': 6,
+  'Resp. Équilibrage PvP': 7,
+  'Référent Streamer': 8,
+};
+
 /** Returns a sort priority for a grade within a pole (lower = higher rank). */
 export function getGradePriority(grade: string, pole: Pole): number {
-  if (pole === Pole.GERANCE) {
-    return GERANCE_GRADE_ORDER[grade] ?? 99;
-  }
+  if (pole === Pole.GERANCE) return GERANCE_GRADE_ORDER[grade] ?? 99;
+  if (pole === Pole.RESPONSABLES) return RESPONSABLES_GRADE_ORDER[grade] ?? 99;
   const lower = grade.toLowerCase();
   if (lower.startsWith('responsable') || lower.startsWith('resp')) return 0;
   if (lower.includes('senior')) return 1;
