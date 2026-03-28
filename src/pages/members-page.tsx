@@ -3,7 +3,7 @@ import { Plus, Upload, UserX, Check, X } from 'lucide-react';
 import { t } from '@/i18n';
 import { Pole, type PoleMember } from '@/types';
 import { useAuthStore } from '@/stores/auth.store';
-import { isCoordinateur, isGerantStaff, getPoleForRole } from '@/lib/utils';
+import { isCoordinateur, isGerantStaff, getPoleForRole, isPoleResponsible } from '@/lib/utils';
 import { POLE_LABELS, GRADES_BY_POLE, getGradeColor, compareByGradeThenName, GRADE_TO_ROLE, ROLE_HIERARCHY } from '@/lib/constants';
 import { useMembers, useAddMember, useUpdateMember, useDeleteMember, useBulkImport } from '@/hooks/queries/use-members';
 import Button from '@/components/ui/button';
@@ -94,14 +94,14 @@ interface MergedMember {
 function getDefaultPole(isCoord: boolean, isGerant: boolean, userPole: Pole | null): string {
   if (isCoord) return ALL_OPTION;
   if (isGerant) return Pole.ADMINISTRATION;
-  return userPole ?? Pole.MODERATION;
+  return userPole ?? ALL_OPTION;
 }
 
 function getAvailablePoles(isCoord: boolean, isGerant: boolean, userPole: Pole | null): Pole[] {
   if (isCoord) return Object.values(Pole);
   if (isGerant) return [Pole.ADMINISTRATION, Pole.RESPONSABLES, Pole.MODERATION, Pole.ANIMATION, Pole.MJ, Pole.DOUANE];
   if (userPole) return [userPole];
-  return [];
+  return Object.values(Pole);
 }
 
 interface InlineEditCellProps {
@@ -194,6 +194,7 @@ export default function MembersPage() {
   const isCoord = user ? isCoordinateur(user.role) : false;
   const isGerant = user ? isGerantStaff(user.role) : false;
   const userPole = user ? getPoleForRole(user.role) : null;
+  const canManage = isCoord || isGerant || (user ? isPoleResponsible(user.role) : false);
 
   const availablePoles = useMemo(
     () => getAvailablePoles(isCoord, isGerant, userPole),
@@ -407,16 +408,18 @@ export default function MembersPage() {
             />
           </div>
         )}
-        <div className="ml-auto flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={() => setShowImportModal(true)}>
-            <Upload className="h-4 w-4" />
-            {tr.members.bulkImport}
-          </Button>
-          <Button size="sm" onClick={() => setShowAddModal(true)}>
-            <Plus className="h-4 w-4" />
-            {tr.members.addMember}
-          </Button>
-        </div>
+        {canManage && (
+          <div className="ml-auto flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={() => setShowImportModal(true)}>
+              <Upload className="h-4 w-4" />
+              {tr.members.bulkImport}
+            </Button>
+            <Button size="sm" onClick={() => setShowAddModal(true)}>
+              <Plus className="h-4 w-4" />
+              {tr.members.addMember}
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Table */}

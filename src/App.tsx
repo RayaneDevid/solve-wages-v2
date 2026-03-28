@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/auth.store';
 import { fetchMe } from '@/api/auth.api';
-import { PANEL_ACCESS_ROLES } from '@/lib/constants';
+
 import { Role } from '@/types';
 import Layout from '@/components/layout/layout';
 import ProtectedRoute from '@/routes/protected-route';
@@ -91,19 +91,19 @@ function AppRoutes() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/auth/callback" element={<AuthCallbackPage />} />
 
-      {/* Dashboard + History: all panel access roles */}
-      <Route element={<ProtectedRoute allowedRoles={PANEL_ACCESS_ROLES} />}>
+      {/* Dashboard + History + Members: any authenticated user */}
+      <Route element={<ProtectedRoute />}>
         <Route element={<Layout />}>
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/history" element={<HistoryPage />} />
+          <Route path="/members" element={<MembersPage />} />
         </Route>
       </Route>
 
-      {/* Payroll + Members: resp, gerant_staff, coordinateur */}
+      {/* Payroll: resp, gerant_staff, coordinateur */}
       <Route element={<ProtectedRoute allowedRoles={PAYROLL_ROLES} />}>
         <Route element={<Layout />}>
           <Route path="/payroll" element={<PayrollEntryPage />} />
-          <Route path="/members" element={<MembersPage />} />
         </Route>
       </Route>
 

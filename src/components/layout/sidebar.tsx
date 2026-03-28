@@ -38,7 +38,7 @@ export default function Sidebar() {
       to: '/dashboard',
       label: tr.nav.dashboard,
       icon: <LayoutDashboard className="h-[18px] w-[18px]" />,
-      visible: canAccessPayroll,
+      visible: true,
     },
     {
       to: '/payroll',
@@ -50,7 +50,7 @@ export default function Sidebar() {
       to: '/members',
       label: tr.nav.members,
       icon: <Users className="h-[18px] w-[18px]" />,
-      visible: canAccessPayroll,
+      visible: true,
     },
     {
       to: '/global',
