@@ -18,7 +18,7 @@ BEGIN
     WHEN r IN ('lore') THEN 'lore'::pole_type
     WHEN r IN ('equilibrage_pvp') THEN 'equilibrage_pvp'::pole_type
     WHEN r IN ('cm') THEN 'community_manager'::pole_type
-    WHEN r = 'referent_streamer' THEN 'streamer'::pole_type
+    WHEN r = 'referent_streamer' THEN 'responsables'::pole_type
     ELSE NULL
   END;
 END;
