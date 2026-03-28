@@ -7,7 +7,7 @@ export const RESP_TO_POLE: Record<string, string> = {
   resp_lore: 'lore',
   resp_equilibrage_pvp: 'equilibrage_pvp',
   resp_cm: 'community_manager',
-  referent_streamer: 'responsables',
+  gerant_equilibrage: 'equilibrage_pvp',
 };
 
 export const GERANT_STAFF_POLES = ['administration', 'moderation', 'animation', 'mj', 'douane', 'responsables'];

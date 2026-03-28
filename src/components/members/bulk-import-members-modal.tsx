@@ -45,7 +45,6 @@ const POLE_LABEL_TO_ENUM: Record<string, Pole> = {
   'equilibrage': Pole.EQUILIBRAGE_PVP,
   'equilibrage pvp': Pole.EQUILIBRAGE_PVP,
   'équilibrage pvp': Pole.EQUILIBRAGE_PVP,
-  'streamer': Pole.STREAMER,
   'support': Pole.SUPPORT,
   'rp': Pole.GERANCE,
   'serveur': Pole.GERANCE,

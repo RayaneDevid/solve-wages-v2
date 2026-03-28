@@ -43,7 +43,6 @@ export enum Pole {
   LORE = 'lore',
   EQUILIBRAGE_PVP = 'equilibrage_pvp',
   COMMUNITY_MANAGER = 'community_manager',
-  STREAMER = 'streamer',
   SUPPORT = 'support',
 }
 

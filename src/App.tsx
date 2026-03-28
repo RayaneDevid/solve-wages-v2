@@ -47,6 +47,7 @@ const PAYROLL_ROLES: Role[] = [
   Role.RESP_LORE,
   Role.RESP_EQUILIBRAGE_PVP,
   Role.RESP_CM,
+  Role.GERANT_EQUILIBRAGE,
 ];
 
 function AppRoutes() {

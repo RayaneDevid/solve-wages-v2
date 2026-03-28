@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from 'react';
 import { Plus, Upload, UserX, Check, X } from 'lucide-react';
 import { t } from '@/i18n';
-import { Pole, type PoleMember } from '@/types';
+import { Role, Pole, type PoleMember } from '@/types';
 import { useAuthStore } from '@/stores/auth.store';
 import { isCoordinateur, isGerantStaff, getPoleForRole, isPoleResponsible } from '@/lib/utils';
 import { POLE_LABELS, GRADES_BY_POLE, getGradeColor, compareByGradeThenName, GRADE_TO_ROLE, ROLE_HIERARCHY } from '@/lib/constants';
@@ -194,7 +194,7 @@ export default function MembersPage() {
   const isCoord = user ? isCoordinateur(user.role) : false;
   const isGerant = user ? isGerantStaff(user.role) : false;
   const userPole = user ? getPoleForRole(user.role) : null;
-  const canManage = isCoord || isGerant || (user ? isPoleResponsible(user.role) : false);
+  const canManage = isCoord || isGerant || (user ? isPoleResponsible(user.role) || user.role === Role.GERANT_EQUILIBRAGE : false);
 
   const availablePoles = useMemo(
     () => getAvailablePoles(isCoord, isGerant, userPole),

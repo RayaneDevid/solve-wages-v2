@@ -65,7 +65,7 @@ export const ROLE_TO_POLE: Record<Role, Pole | null> = {
   [Role.EQUILIBRAGE_PVP]: Pole.EQUILIBRAGE_PVP,
   [Role.RESP_CM]: Pole.RESPONSABLES,
   [Role.CM]: Pole.COMMUNITY_MANAGER,
-  [Role.REFERENT_STREAMER]: Pole.RESPONSABLES,
+  [Role.REFERENT_STREAMER]: Pole.RESPONSABLES, // paid in responsables, fills no payroll
 };
 
 export const GRADES_BY_POLE: Record<Pole, string[]> = {
@@ -97,7 +97,6 @@ export const GRADES_BY_POLE: Record<Pole, string[]> = {
   [Pole.COMMUNITY_MANAGER]: ['CM'],
   [Pole.LORE]: ['Lore'],
   [Pole.EQUILIBRAGE_PVP]: ['Equilibrage'],
-  [Pole.STREAMER]: [],
   [Pole.SUPPORT]: [],
 };
 
@@ -212,7 +211,7 @@ export const RESP_PAYROLL_POLE: Partial<Record<Role, Pole>> = {
   [Role.RESP_LORE]: Pole.LORE,
   [Role.RESP_EQUILIBRAGE_PVP]: Pole.EQUILIBRAGE_PVP,
   [Role.RESP_CM]: Pole.COMMUNITY_MANAGER,
-  [Role.REFERENT_STREAMER]: Pole.STREAMER,
+  [Role.GERANT_EQUILIBRAGE]: Pole.EQUILIBRAGE_PVP,
 };
 
 export const POLE_LABELS: Record<Pole, string> = {
@@ -227,7 +226,6 @@ export const POLE_LABELS: Record<Pole, string> = {
   [Pole.COMMUNITY_MANAGER]: 'Community Manager',
   [Pole.LORE]: 'Lore',
   [Pole.EQUILIBRAGE_PVP]: 'Équilibrage PvP',
-  [Pole.STREAMER]: 'Streamer',
   [Pole.SUPPORT]: 'Support',
 };
 
@@ -257,7 +255,9 @@ export const PANEL_ACCESS_ROLES: Role[] = [
   Role.DEVELOPPEUR,
   Role.COORDINATEUR,
   Role.GERANT_STAFF,
+  Role.GERANT_EQUILIBRAGE,
   ...POLE_RESPONSIBLE_ROLES,
+  Role.REFERENT_STREAMER,
 ];
 
 export const ASSIGNABLE_ROLES: Role[] = Object.values(Role).filter(

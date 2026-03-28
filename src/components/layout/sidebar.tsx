@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth.store';
 import { useSidebarStore } from '@/stores/sidebar.store';
 import { isCoordinateur, isGerantStaff, isPoleResponsible } from '@/lib/utils';
+import { Role } from '@/types';
 import { t } from '@/i18n';
 
 interface NavItem {
@@ -31,7 +32,7 @@ export default function Sidebar() {
 
   const role = user.role;
   const canAccessPayroll =
-    isCoordinateur(role) || isGerantStaff(role) || isPoleResponsible(role);
+    isCoordinateur(role) || isGerantStaff(role) || isPoleResponsible(role) || role === Role.GERANT_EQUILIBRAGE;
 
   const navItems: NavItem[] = [
     {

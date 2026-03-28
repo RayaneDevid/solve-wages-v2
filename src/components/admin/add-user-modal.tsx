@@ -17,7 +17,7 @@ interface AddUserModalProps {
 const POLE_ORDER: Pole[] = [
   Pole.GERANCE, Pole.ADMINISTRATION, Pole.RESPONSABLES, Pole.MODERATION, Pole.ANIMATION,
   Pole.MJ, Pole.DOUANE, Pole.BUILDER, Pole.LORE, Pole.EQUILIBRAGE_PVP,
-  Pole.COMMUNITY_MANAGER, Pole.STREAMER,
+  Pole.COMMUNITY_MANAGER,
 ];
 
 export default function AddUserModal({

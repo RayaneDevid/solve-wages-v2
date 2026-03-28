@@ -314,7 +314,6 @@ const fr = {
     community_manager: 'Community Manager',
     lore: 'Lore',
     equilibrage_pvp: 'Équilibrage PvP',
-    streamer: 'Streamer',
     support: 'Support',
   },
 } as const;
