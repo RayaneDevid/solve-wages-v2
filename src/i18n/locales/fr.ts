@@ -107,6 +107,7 @@ const fr = {
       closeWeek: 'Fermer la saisie',
       lockWeek: 'Verrouiller la semaine',
       confirmAll: 'Tout confirmer',
+      markZeroInactive: 'Marquer inactifs (0 cr.)',
       copyBotLink: 'Copier lien bot',
       reopenWeek: 'Rouvrir la saisie',
     },
@@ -170,6 +171,7 @@ const fr = {
     title: 'Vue Globale',
     allPoles: 'Tous les pôles',
     editEntry: 'Modifier l\'entrée',
+    submittedBy: 'Soumis par',
   },
   admin: {
     title: 'Administration',
@@ -303,6 +305,7 @@ const fr = {
   poles: {
     gerance: 'Gérance',
     administration: 'Administration',
+    responsables: 'Responsables',
     moderation: 'Modération',
     animation: 'Animation',
     mj: 'Maître du Jeu',

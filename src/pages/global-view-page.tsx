@@ -111,7 +111,7 @@ function EditEntryModal({ entry, isOpen, onClose, onSave }: EditModalProps) {
 export default function GlobalViewPage() {
   const tr = t();
   const user = useAuthStore((s) => s.user);
-  const isCoord = user ? isCoordinateur(user.role) : false;
+  const isCoord = user ? (user.roles ?? [user.role]).some((r) => isCoordinateur(r)) : false;
   const [filterPole, setFilterPole] = useState<string>('all');
   const [editEntry, setEditEntry] = useState<LocalPayrollEntry | null>(null);
 
@@ -145,6 +145,11 @@ export default function GlobalViewPage() {
   function getSubmissionStatus(pole: Pole) {
     const sub = submissions.find((s) => s.pole === pole);
     return sub?.status ?? null;
+  }
+
+  function getSubmissionUsername(pole: Pole) {
+    const sub = submissions.find((s) => s.pole === pole);
+    return sub?.submitted_by_username ?? null;
   }
 
   async function handleExportCsv() {
@@ -221,6 +226,19 @@ export default function GlobalViewPage() {
     }
   }, [bulkConfirm, unconfirmedIds, tr]);
 
+  const handleConfirmAllPole = useCallback(async (pole: Pole) => {
+    const ids = entries
+      .filter((e) => e.pole === pole && e.id && !e.confirmed_by_coordinator)
+      .map((e) => e.id!);
+    if (ids.length === 0) return;
+    try {
+      await bulkConfirm.mutateAsync({ entry_ids: ids, confirmed: true });
+      showToast(tr.payroll.toast.allConfirmed);
+    } catch {
+      showToast(tr.payroll.toast.errorConfirm, 'error');
+    }
+  }, [bulkConfirm, entries, tr]);
+
   const weekLabel = week
     ? `${tr.payroll.weekOf} ${formatShortDate(week.week_start)} ${tr.payroll.to} ${formatShortDate(week.week_end)}`
     : '';
@@ -288,14 +306,31 @@ export default function GlobalViewPage() {
         <div className="flex flex-col gap-8">
           {polesToShow.map((pole) => {
             const poleEntries = entries.filter((e) => e.pole === pole);
+            const poleUnconfirmedCount = poleEntries.filter((e) => e.id && !e.confirmed_by_coordinator).length;
             return (
               <div key={pole}>
                 <div className="mb-3 flex items-center gap-3">
                   <h2 className="text-lg font-semibold text-text-primary">{POLE_LABELS[pole]}</h2>
                   <SubmissionStatusBadge status={getSubmissionStatus(pole)} />
+                  {getSubmissionUsername(pole) && (
+                    <span className="text-xs text-text-tertiary">
+                      {tr.global.submittedBy} <span className="font-medium text-text-secondary">{getSubmissionUsername(pole)}</span>
+                    </span>
+                  )}
                   <span className="text-xs text-text-tertiary">
                     {poleEntries.length} staffs
                   </span>
+                  {isCoord && poleUnconfirmedCount > 0 && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handleConfirmAllPole(pole)}
+                      loading={bulkConfirm.isPending}
+                    >
+                      <CheckCircle2 className="h-4 w-4" />
+                      {tr.payroll.actions.confirmAll} ({poleUnconfirmedCount})
+                    </Button>
+                  )}
                 </div>
                 <PayrollTable
                   entries={poleEntries}

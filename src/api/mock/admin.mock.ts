@@ -1,7 +1,7 @@
 import { Role } from '@/types';
 import type { User } from '@/types';
 
-const MOCK_USERS: User[] = [
+const MOCK_USERS: Omit<User, 'roles'>[] = [
   {
     id: '1',
     supabase_auth_id: null,
@@ -124,7 +124,7 @@ const MOCK_USERS: User[] = [
   },
 ];
 
-let users = [...MOCK_USERS];
+let users: User[] = MOCK_USERS.map((u) => ({ ...u, roles: [u.role] }));
 
 function delay(ms = 300): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -138,19 +138,21 @@ export async function mockGetUsers(): Promise<User[]> {
 export async function mockCreateUser(payload: {
   discord_id: string;
   username: string;
-  role: Role;
+  roles: Role[];
 }): Promise<User> {
   await delay();
   if (users.some((u) => u.discord_id === payload.discord_id)) {
     throw new Error('Discord ID already exists');
   }
+  const primaryRole = payload.roles[0] ?? Role.MODERATEUR;
   const newUser: User = {
     id: crypto.randomUUID(),
     supabase_auth_id: null,
     discord_id: payload.discord_id,
     username: payload.username,
     avatar_url: null,
-    role: payload.role,
+    role: primaryRole,
+    roles: payload.roles,
     is_active: true,
     last_login_at: null,
     created_at: new Date().toISOString(),
@@ -162,7 +164,7 @@ export async function mockCreateUser(payload: {
 
 export async function mockUpdateUser(payload: {
   user_id: string;
-  role?: Role;
+  roles?: Role[];
   is_active?: boolean;
 }): Promise<User> {
   await delay();
@@ -170,7 +172,7 @@ export async function mockUpdateUser(payload: {
   if (idx === -1) throw new Error('User not found');
   const updated: User = {
     ...users[idx],
-    ...(payload.role !== undefined && { role: payload.role }),
+    ...(payload.roles !== undefined && { roles: payload.roles, role: payload.roles[0] ?? users[idx].role }),
     ...(payload.is_active !== undefined && { is_active: payload.is_active }),
     updated_at: new Date().toISOString(),
   };

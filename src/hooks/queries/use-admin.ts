@@ -16,7 +16,7 @@ export function useCreateUser() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (payload: { discord_id: string; username: string; role: Role }) =>
+    mutationFn: (payload: { discord_id: string; username: string; roles: Role[] }) =>
       isDevMode ? mockCreateUser(payload) : createUser(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
@@ -28,7 +28,7 @@ export function useUpdateUser() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (payload: { user_id: string; role?: Role; is_active?: boolean }) =>
+    mutationFn: (payload: { user_id: string; roles?: Role[]; is_active?: boolean }) =>
       isDevMode ? mockUpdateUser(payload) : updateUser(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });

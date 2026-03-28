@@ -44,6 +44,46 @@ function normalizeRole(role: string): string {
   return GRADE_TO_ROLE[role] ?? role;
 }
 
+// Role priority order (lower index = higher rank)
+const ROLE_ORDER = [
+  'developpeur', 'coordinateur', 'gerant_serveur', 'gerant_staff', 'gerant_rp',
+  'gerant_dev', 'gerant_discord', 'gerant_equilibrage', 'administrateur',
+  'resp_moderation', 'resp_animation', 'resp_mj', 'resp_douane', 'resp_builder',
+  'resp_cm', 'resp_lore', 'resp_equilibrage_pvp', 'referent_streamer',
+  'moderateur_senior', 'animateur_senior', 'mj_senior', 'douanier_senior',
+  'moderateur', 'animateur', 'mj', 'douanier', 'builder', 'cm', 'lore', 'equilibrage_pvp',
+];
+
+const ROLE_TO_POLE_MAP: Record<string, string> = {
+  gerant_rp: 'gerance', gerant_dev: 'gerance', gerant_staff: 'gerance',
+  gerant_discord: 'gerance', gerant_equilibrage: 'gerance', gerant_serveur: 'gerance',
+  administrateur: 'administration',
+  resp_moderation: 'moderation', moderateur_senior: 'moderation', moderateur: 'moderation',
+  resp_animation: 'animation', animateur_senior: 'animation', animateur: 'animation',
+  resp_mj: 'mj', mj_senior: 'mj', mj: 'mj',
+  resp_douane: 'douane', douanier_senior: 'douane', douanier: 'douane',
+  resp_builder: 'builder', builder: 'builder',
+  resp_lore: 'lore', lore: 'lore',
+  resp_equilibrage_pvp: 'equilibrage_pvp', equilibrage_pvp: 'equilibrage_pvp',
+  resp_cm: 'community_manager', cm: 'community_manager',
+  referent_streamer: 'streamer',
+};
+
+const ROLE_TO_GRADE_MAP: Record<string, string> = {
+  gerant_rp: 'Gérant RP', gerant_dev: 'Gérant Développement', gerant_staff: 'Gérant Staff',
+  gerant_discord: 'Gérant Discord', gerant_equilibrage: 'Gérant Equilibrage', gerant_serveur: 'Gérant Serveur',
+  administrateur: 'Administrateur',
+  resp_moderation: 'Responsable Modération', moderateur_senior: 'Modérateur Senior', moderateur: 'Modérateur',
+  resp_animation: 'Responsable Animation', animateur_senior: 'Animateur Senior', animateur: 'Animateur',
+  resp_mj: 'Responsable MJ', mj_senior: 'MJ Senior', mj: 'MJ',
+  resp_douane: 'Responsable Douane', douanier_senior: 'Douanier Senior', douanier: 'Douanier',
+  resp_builder: 'Responsable Builder', builder: 'Builder',
+  resp_lore: 'Responsable Lore', lore: 'Lore',
+  resp_equilibrage_pvp: 'Resp. Équilibrage PvP', equilibrage_pvp: 'Equilibrage',
+  resp_cm: 'Responsable CM', cm: 'CM',
+  referent_streamer: 'Référent Streamer',
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -115,39 +155,74 @@ serve(async (req) => {
       }
 
       // Single create
-      const { discord_id, username, role } = body;
+      const { discord_id, username, role, roles } = body;
 
-      if (!discord_id || !username || !role) {
-        return errorResponse('discord_id, username et role sont requis', 400);
+      // Accept either roles[] (new) or role (legacy fallback)
+      const rawRoles: string[] = Array.isArray(roles) && roles.length > 0
+        ? roles
+        : role ? [role] : [];
+
+      if (!discord_id || !username || rawRoles.length === 0) {
+        return errorResponse('discord_id, username et au moins un rôle sont requis', 400);
       }
+
+      const normalizedRoles = rawRoles.map(normalizeRole);
+
+      // Primary role = highest in hierarchy
+      const primaryRole = [...normalizedRoles].sort((a, b) => {
+        const ia = ROLE_ORDER.indexOf(a);
+        const ib = ROLE_ORDER.indexOf(b);
+        return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+      })[0];
 
       // Check discord_id uniqueness
       const { data: existing } = await supabase
         .from('users')
         .select('id')
         .eq('discord_id', discord_id)
-        .single();
+        .maybeSingle();
 
       if (existing) {
         return errorResponse('Un utilisateur avec ce Discord ID existe déjà', 409);
       }
 
-      const { data, error } = await supabase
+      const { data: createdUser, error } = await supabase
         .from('users')
-        .insert({ discord_id, username, role: normalizeRole(role) })
+        .insert({ discord_id, username, role: primaryRole, roles: normalizedRoles })
         .select('*')
         .single();
 
       if (error) {
         return errorResponse(error.message, 500);
       }
-      return jsonResponse(data, 201);
+
+      // Create pole_members entries for each role that has a pole
+      const poleEntries = normalizedRoles
+        .filter((r) => ROLE_TO_POLE_MAP[r])
+        .map((r) => ({
+          discord_id,
+          discord_username: username,
+          pole: ROLE_TO_POLE_MAP[r],
+          grade: ROLE_TO_GRADE_MAP[r] ?? r,
+          staff_id: createdUser.id,
+          added_by_id: user.id,
+          is_active: true,
+        }));
+
+      if (poleEntries.length > 0) {
+        const { error: poleErr } = await supabase.from('pole_members').insert(poleEntries);
+        if (poleErr) {
+          return errorResponse(poleErr.message, 500);
+        }
+      }
+
+      return jsonResponse(createdUser, 201);
     }
 
     // PATCH — Update user
     if (req.method === 'PATCH') {
       const body = await req.json();
-      const { user_id, role, is_active } = body;
+      const { user_id, role, roles, is_active } = body;
 
       if (!user_id) {
         return errorResponse('user_id est requis', 400);
@@ -159,7 +234,21 @@ serve(async (req) => {
       }
 
       const updates: Record<string, unknown> = {};
-      if (role !== undefined) updates.role = normalizeRole(role);
+
+      if (Array.isArray(roles) && roles.length > 0) {
+        const normalizedRoles = roles.map(normalizeRole);
+        const primaryRole = [...normalizedRoles].sort((a, b) => {
+          const ia = ROLE_ORDER.indexOf(a);
+          const ib = ROLE_ORDER.indexOf(b);
+          return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+        })[0];
+        updates.roles = normalizedRoles;
+        updates.role = primaryRole;
+      } else if (role !== undefined) {
+        updates.role = normalizeRole(role);
+        updates.roles = [normalizeRole(role)];
+      }
+
       if (is_active !== undefined) updates.is_active = is_active;
 
       if (Object.keys(updates).length === 0) {

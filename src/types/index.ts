@@ -34,6 +34,7 @@ export enum Role {
 export enum Pole {
   GERANCE = 'gerance',
   ADMINISTRATION = 'administration',
+  RESPONSABLES = 'responsables',
   MODERATION = 'moderation',
   ANIMATION = 'animation',
   MJ = 'mj',
@@ -56,6 +57,7 @@ export interface User {
   username: string;
   avatar_url: string | null;
   role: Role;
+  roles: Role[];
   is_active: boolean;
   last_login_at: string | null;
   created_at: string;
@@ -79,6 +81,7 @@ export interface PayrollSubmission {
   id: string;
   payroll_week_id: string;
   submitted_by_id: string;
+  submitted_by_username: string | null;
   pole: Pole;
   status: SubmissionStatus;
   submitted_at: string | null;

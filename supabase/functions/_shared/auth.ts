@@ -7,6 +7,7 @@ interface AppUser {
   username: string;
   avatar_url: string | null;
   role: string;
+  roles: string[];
   is_active: boolean;
   last_login_at: string | null;
   created_at: string;

@@ -9,7 +9,7 @@ export async function getUsers(): Promise<User[]> {
 export async function createUser(payload: {
   discord_id: string;
   username: string;
-  role: Role;
+  roles: Role[];
 }): Promise<User> {
   const { data } = await apiClient.post<User>('/admin-users', payload);
   return data;
@@ -17,7 +17,7 @@ export async function createUser(payload: {
 
 export async function updateUser(payload: {
   user_id: string;
-  role?: Role;
+  roles?: Role[];
   is_active?: boolean;
 }): Promise<User> {
   const { data } = await apiClient.patch<User>('/admin-users', payload);

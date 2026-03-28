@@ -30,10 +30,11 @@ export default function LoginPage() {
 
   const handleDiscordLogin = async () => {
     setError(null);
+    const isDevMode = import.meta.env.VITE_DEV_MODE === 'true';
     await supabase.auth.signInWithOAuth({
       provider: 'discord',
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: isDevMode ? 'http://localhost:5173/' : `${window.location.origin}/auth/callback`,
       },
     });
   };

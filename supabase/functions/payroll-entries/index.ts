@@ -74,11 +74,19 @@ serve(async (req) => {
           return errorResponse(membersError.message, 500);
         }
 
+        // Resp roles (grade starting with "Responsable") are paid via gérance, not their own pole
+        const isRespGrade = (grade: string) => grade.startsWith('Responsable');
+
+        const filteredEntries = (entries ?? []).filter(
+          (e: { grade: string }) => !isRespGrade(e.grade),
+        );
+
         const existingDiscordIds = new Set(
-          (entries ?? []).map((e: { discord_id: string }) => e.discord_id),
+          filteredEntries.map((e: { discord_id: string }) => e.discord_id),
         );
 
         const prefilled = (poleMembers ?? [])
+          .filter((m: { grade: string }) => !isRespGrade(m.grade))
           .filter((m: { discord_id: string }) => !existingDiscordIds.has(m.discord_id))
           .map((m: { staff_id: string | null; discord_username: string; discord_id: string; steam_id: string | null; grade: string }) => ({
             id: null,
@@ -111,7 +119,7 @@ serve(async (req) => {
           }));
 
         const allEntries = [
-          ...(entries ?? []).map((e: Record<string, unknown>) => ({ ...e, is_prefilled: false })),
+          ...filteredEntries.map((e: Record<string, unknown>) => ({ ...e, is_prefilled: false })),
           ...prefilled,
         ];
 

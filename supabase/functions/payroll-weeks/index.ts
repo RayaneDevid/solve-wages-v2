@@ -61,7 +61,24 @@ serve(async (req) => {
           return errorResponse(subError.message, 500);
         }
 
-        return jsonResponse({ ...week, submissions: submissions ?? [] });
+        const submittedByIds = [...new Set((submissions ?? []).map((s: { submitted_by_id: string }) => s.submitted_by_id).filter(Boolean))];
+        const usernameMap: Record<string, string> = {};
+        if (submittedByIds.length > 0) {
+          const { data: submitters } = await supabase
+            .from('users')
+            .select('id, username')
+            .in('id', submittedByIds);
+          if (submitters) {
+            for (const u of submitters) { usernameMap[u.id] = u.username; }
+          }
+        }
+
+        const enrichedSubmissions = (submissions ?? []).map((s: Record<string, unknown>) => ({
+          ...s,
+          submitted_by_username: usernameMap[s.submitted_by_id as string] ?? null,
+        }));
+
+        return jsonResponse({ ...week, submissions: enrichedSubmissions });
       }
 
       // All weeks

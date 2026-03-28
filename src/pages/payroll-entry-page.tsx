@@ -1,10 +1,10 @@
 import { useState, useCallback, useMemo } from 'react';
-import { Send, Save } from 'lucide-react';
+import { Send, Save, EyeOff } from 'lucide-react';
 import { t } from '@/i18n';
-import { Pole, type PayrollEntry } from '@/types';
+import { Role, Pole, type PayrollEntry, type PayrollWeek, type PayrollSubmission } from '@/types';
 import { useAuthStore } from '@/stores/auth.store';
-import { isCoordinateur, isGerantStaff, isPoleResponsible, getPoleForRole, formatShortDate } from '@/lib/utils';
-import { POLE_LABELS } from '@/lib/constants';
+import { isCoordinateur, isPoleResponsible, getPoleForRole, formatShortDate } from '@/lib/utils';
+import { POLE_LABELS, RESP_PAYROLL_POLE } from '@/lib/constants';
 import { useCurrentWeek, usePayrollEntries, useSaveEntries, useSubmitPayroll, useDeleteEntry } from '@/hooks/queries/use-payroll';
 import Button from '@/components/ui/button';
 import Select from '@/components/ui/select';
@@ -42,38 +42,38 @@ function toLocalEntry(entry: PayrollEntry): LocalPayrollEntry {
   };
 }
 
-function getDefaultPole(isCoord: boolean, isGerant: boolean, userPole: Pole | null): Pole {
-  if (isCoord) return Pole.MODERATION;
-  if (isGerant) return Pole.ADMINISTRATION;
-  return userPole ?? Pole.MODERATION;
-}
-
-function getAvailablePoles(isCoord: boolean, isGerant: boolean, userPole: Pole | null): Pole[] {
-  if (isCoord) return Object.values(Pole);
-  if (isGerant) return [Pole.ADMINISTRATION, Pole.MODERATION, Pole.ANIMATION, Pole.MJ, Pole.DOUANE];
-  if (userPole) return [userPole];
-  return [];
+function getAvailablePoles(roles: Role[]): Pole[] {
+  if (roles.some((r) => isCoordinateur(r))) return Object.values(Pole);
+  const poles = new Set<Pole>();
+  for (const r of roles) {
+    if (r === Role.GERANT_STAFF) {
+      [Pole.ADMINISTRATION, Pole.MODERATION, Pole.ANIMATION, Pole.MJ, Pole.DOUANE, Pole.RESPONSABLES].forEach((p) => poles.add(p));
+    } else {
+      // resp_ roles fill their own pole's payroll (not responsables)
+      const pole = RESP_PAYROLL_POLE[r] ?? getPoleForRole(r);
+      if (pole) poles.add(pole);
+    }
+  }
+  return [...poles];
 }
 
 export default function PayrollEntryPage() {
   const tr = t();
   const user = useAuthStore((s) => s.user);
-  const isCoord = user ? isCoordinateur(user.role) : false;
-  const isGerant = user ? isGerantStaff(user.role) : false;
-  const isResp = user ? isPoleResponsible(user.role) : false;
-  const userPole = user ? getPoleForRole(user.role) : null;
+  const userRoles: Role[] = user?.roles ?? (user?.role ? [user.role] : []);
+  const isCoord = userRoles.some((r) => isCoordinateur(r));
+  const isGerant = userRoles.includes(Role.GERANT_STAFF);
+  const isResp = userRoles.some((r) => isPoleResponsible(r));
 
   const availablePoles = useMemo(
-    () => getAvailablePoles(isCoord, isGerant, userPole),
-    [isCoord, isGerant, userPole],
+    () => getAvailablePoles(userRoles),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [user],
   );
 
   const [selectedPole, setSelectedPole] = useState<Pole>(
-    getDefaultPole(isCoord, isGerant, userPole),
+    availablePoles[0] ?? Pole.MODERATION,
   );
-  const [localEntries, setLocalEntries] = useState<LocalPayrollEntry[]>([]);
-  const [hasLocalChanges, setHasLocalChanges] = useState(false);
-
   const { data: week, isLoading: weekLoading } = useCurrentWeek();
   const { data: serverEntries, isLoading: entriesLoading } = usePayrollEntries(
     week?.id,
@@ -85,6 +85,15 @@ export default function PayrollEntryPage() {
   const weekStatus = week?.status ?? 'closed';
   const canEdit = isCoord || isGerant || isResp;
   const editable = canEdit && weekStatus !== 'locked';
+
+  const submissions = (week as (PayrollWeek & { submissions?: PayrollSubmission[] }) | undefined)?.submissions ?? [];
+  const currentSubmission = submissions.find((s) => s.pole === selectedPole);
+
+  // Initialize from cached data if available (avoids empty table when cache is warm)
+  const [localEntries, setLocalEntries] = useState<LocalPayrollEntry[]>(
+    () => serverEntries?.map(toLocalEntry) ?? [],
+  );
+  const [hasLocalChanges, setHasLocalChanges] = useState(false);
 
   // Sync server entries to local state when they change (React-recommended "store previous props" pattern)
   const [prevServerEntries, setPrevServerEntries] = useState(serverEntries);
@@ -106,6 +115,15 @@ export default function PayrollEntryPage() {
     );
     setHasLocalChanges(true);
   }, []);
+
+  const zeroActiveCount = localEntries.filter((e) => e.montant === 0 && !e.is_inactive).length;
+
+  function handleMarkZeroInactive() {
+    setLocalEntries((prev) =>
+      prev.map((e) => (e.montant === 0 && !e.is_inactive ? { ...e, is_inactive: true, _dirty: true } : e)),
+    );
+    setHasLocalChanges(true);
+  }
 
   const handleDelete = useCallback(async (discordId: string) => {
     // Use functional access to avoid stale closure on localEntries
@@ -154,7 +172,7 @@ export default function PayrollEntryPage() {
         commentaire: e.commentaire,
         presence_reunion: e.presence_reunion,
         montant: e.montant,
-        is_inactive: e.is_inactive || e.montant === 0,
+        is_inactive: e.is_inactive,
       }));
 
     if (entriesToSave.length === 0) return;
@@ -165,10 +183,6 @@ export default function PayrollEntryPage() {
         pole: selectedPole,
         entries: entriesToSave,
       });
-      // Sync local state: mark entries with montant=0 as inactive
-      setLocalEntries((prev) =>
-        prev.map((e) => (e.montant === 0 && !e.is_inactive ? { ...e, is_inactive: true } : e)),
-      );
       showToast(weekStatus === 'open' ? tr.payroll.toast.saved : tr.payroll.toast.updated);
       setHasLocalChanges(false);
     } catch {
@@ -196,7 +210,7 @@ export default function PayrollEntryPage() {
         commentaire: e.commentaire,
         presence_reunion: e.presence_reunion,
         montant: e.montant,
-        is_inactive: e.is_inactive || e.montant === 0,
+        is_inactive: e.is_inactive,
       }));
 
       await saveEntries.mutateAsync({
@@ -271,8 +285,19 @@ export default function PayrollEntryPage() {
             />
           </div>
         )}
+        {currentSubmission?.submitted_by_username && (
+          <span className="text-xs text-text-tertiary">
+            {tr.global.submittedBy} <span className="font-medium text-text-secondary">{currentSubmission.submitted_by_username}</span>
+          </span>
+        )}
         {editable && (
           <div className="ml-auto flex items-center gap-2">
+            {zeroActiveCount > 0 && (
+              <Button size="sm" variant="ghost" onClick={handleMarkZeroInactive}>
+                <EyeOff className="h-4 w-4" />
+                {tr.payroll.actions.markZeroInactive} ({zeroActiveCount})
+              </Button>
+            )}
             {weekStatus === 'open' && (
               <Button
                 size="sm"

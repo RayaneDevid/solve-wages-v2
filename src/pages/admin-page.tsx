@@ -84,7 +84,7 @@ export default function AdminPage() {
 
   const existingDiscordIds = useMemo(() => (users ?? []).map((u) => u.discord_id), [users]);
 
-  function handleCreate(data: { discord_id: string; username: string; role: Role }) {
+  function handleCreate(data: { discord_id: string; username: string; roles: Role[] }) {
     createMutation.mutate(data, {
       onSuccess: () => {
         showToast(tr.admin.toast.userCreated, 'success');
@@ -96,7 +96,7 @@ export default function AdminPage() {
     });
   }
 
-  function handleUpdate(data: { user_id: string; role: Role; is_active: boolean }) {
+  function handleUpdate(data: { user_id: string; roles: Role[]; is_active: boolean }) {
     updateMutation.mutate(data, {
       onSuccess: () => {
         showToast(tr.admin.toast.userUpdated, 'success');
@@ -256,17 +256,20 @@ export default function AdminPage() {
                   <span className="font-mono text-xs text-text-secondary">{user.discord_id}</span>
                 </TableCell>
                 <TableCell>
-                  {(() => {
-                    const colors = getGradeColor(ROLE_LABELS[user.role]);
-                    return (
-                      <span
-                        className="inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium"
-                        style={{ backgroundColor: colors.bg, color: colors.text }}
-                      >
-                        {tr.roles[user.role as keyof typeof tr.roles]}
-                      </span>
-                    );
-                  })()}
+                  <div className="flex flex-wrap gap-1">
+                    {(user.roles.length > 0 ? user.roles : [user.role]).map((r) => {
+                      const colors = getGradeColor(ROLE_LABELS[r]);
+                      return (
+                        <span
+                          key={r}
+                          className="inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium"
+                          style={{ backgroundColor: colors.bg, color: colors.text }}
+                        >
+                          {tr.roles[r as keyof typeof tr.roles]}
+                        </span>
+                      );
+                    })}
+                  </div>
                 </TableCell>
                 <TableCell>
                   <Badge variant={user.is_active ? 'success' : 'danger'}>
