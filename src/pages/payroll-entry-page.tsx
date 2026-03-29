@@ -90,18 +90,15 @@ export default function PayrollEntryPage() {
   const submissions = (week as (PayrollWeek & { submissions?: PayrollSubmission[] }) | undefined)?.submissions ?? [];
   const currentSubmission = submissions.find((s) => s.pole === selectedPole);
 
-  // Initialize from cached data if available (avoids empty table when cache is warm)
   const [localEntries, setLocalEntries] = useState<LocalPayrollEntry[]>(
     () => serverEntries?.map(toLocalEntry) ?? [],
   );
   const [hasLocalChanges, setHasLocalChanges] = useState(false);
 
-  // Lock: prevent concurrent editing
   const lockState = usePayrollLock(editable ? week?.id : undefined, editable ? selectedPole : undefined);
   const isBlocked = lockState.status === 'blocked';
   const lockedBy = lockState.status === 'blocked' ? lockState.lockedBy : null;
 
-  // Auto-save every 20s when there are unsaved changes and we own the lock
   const localEntriesRef = useRef(localEntries);
   localEntriesRef.current = localEntries;
   const weekRef = useRef(week);
@@ -149,7 +146,6 @@ export default function PayrollEntryPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editable, lockState.status, selectedPole, hasLocalChanges]);
 
-  // Sync server entries to local state when they change (React-recommended "store previous props" pattern)
   const [prevServerEntries, setPrevServerEntries] = useState(serverEntries);
   if (serverEntries !== prevServerEntries) {
     setPrevServerEntries(serverEntries);
@@ -349,7 +345,6 @@ export default function PayrollEntryPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Header */}
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold text-text-primary">{tr.nav.payroll}</h1>
@@ -364,7 +359,6 @@ export default function PayrollEntryPage() {
         </div>
       )}
 
-      {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-3">
         {availablePoles.length > 1 && (
           <div className="w-[200px]">
@@ -420,7 +414,6 @@ export default function PayrollEntryPage() {
         )}
       </div>
 
-      {/* Table */}
       {entriesLoading ? (
         <div className="flex h-32 items-center justify-center">
           <Spinner />

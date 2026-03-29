@@ -24,6 +24,7 @@ interface PayrollTableProps {
   onUpdate: (discordId: string, field: string, value: string | number | boolean) => void;
   onDelete: (discordId: string) => void;
   onConfirm?: (entryId: string, confirmed: boolean) => void;
+  onEdit?: (entry: LocalPayrollEntry) => void;
 }
 
 export default function PayrollTable({
@@ -38,6 +39,7 @@ export default function PayrollTable({
   onUpdate,
   onDelete,
   onConfirm,
+  onEdit,
 }: PayrollTableProps) {
   const tr = t();
   const counters = getPoleCounterFields(pole);
@@ -137,6 +139,7 @@ export default function PayrollTable({
                 onUpdate={onUpdate}
                 onDelete={onDelete}
                 onConfirm={onConfirm}
+                onEdit={onEdit}
                 dateRange={dateRange}
               />
             ))

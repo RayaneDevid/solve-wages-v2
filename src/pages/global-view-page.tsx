@@ -67,7 +67,6 @@ function EditEntryModal({ entry, isOpen, onClose, onSave }: EditModalProps) {
   const tr = t();
   const [form, setForm] = useState<LocalPayrollEntry | null>(null);
 
-  // Sync form from entry prop (React-recommended "store previous props" pattern)
   const [prevEntry, setPrevEntry] = useState<LocalPayrollEntry | null>(null);
   if (entry !== prevEntry) {
     setPrevEntry(entry);
@@ -130,7 +129,6 @@ export default function GlobalViewPage() {
 
   const polesToShow = filterPole === 'all' ? ALL_POLES : [filterPole as Pole];
 
-  // Build a map of approved primes by discord_id
   const approvedPrimesMap = useMemo(() => {
     const map = new Map<string, number>();
     if (!primesData) return map;
@@ -142,7 +140,6 @@ export default function GlobalViewPage() {
     return map;
   }, [primesData]);
 
-  // Build a map of approved primes by discord_id → prime object (for display)
   const approvedPrimesList = useMemo(
     () => primesData?.filter((p) => p.status === 'approved') ?? [],
     [primesData],
@@ -286,7 +283,6 @@ export default function GlobalViewPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Header */}
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold text-text-primary">{tr.global.title}</h1>
@@ -310,7 +306,6 @@ export default function GlobalViewPage() {
         </div>
       </div>
 
-      {/* Pole filter */}
       <div className="flex items-center gap-3">
         <div className="w-[220px]">
           <Select
@@ -322,7 +317,6 @@ export default function GlobalViewPage() {
         <WeekStatusBadge status={week.status} />
       </div>
 
-      {/* Pole sections */}
       {entriesLoading ? (
         <div className="flex h-32 items-center justify-center">
           <Spinner />
@@ -377,38 +371,18 @@ export default function GlobalViewPage() {
                   onUpdate={() => {}}
                   onDelete={() => {}}
                   onConfirm={handleConfirm}
+                  onEdit={isCoord && week.status !== 'locked' ? setEditEntry : undefined}
                 />
-{/* Clickable rows for edit */}
-                {week.status !== 'locked' && poleEntries.length > 0 && (
-                  <div className="mt-2 flex flex-wrap gap-1">
-                    {poleEntries.map((entry) => (
-                      <button
-                        key={entry.discord_id}
-                        onClick={() => setEditEntry(entry)}
-                        className={cn(
-                          'rounded px-2 py-1 text-xs transition-colors',
-                          entry.modified_by_coordinator
-                            ? 'bg-accent-purple/10 text-accent-purple hover:bg-accent-purple/20'
-                            : 'bg-white/[0.03] text-text-secondary hover:bg-white/[0.06]',
-                        )}
-                      >
-                        {entry.discord_username}
-                      </button>
-                    ))}
-                  </div>
-                )}
               </div>
             );
           })}
 
-          {/* Summary */}
           {poleSummaries.length > 0 && (
             <PayrollSummary poleSummaries={poleSummaries} />
           )}
         </div>
       )}
 
-      {/* Edit modal */}
       <EditEntryModal
         entry={editEntry}
         isOpen={!!editEntry}

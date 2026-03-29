@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Trash2, ShieldCheck, CheckCircle2, MessageSquare, MessageSquarePlus, Gift } from 'lucide-react';
+import { Trash2, ShieldCheck, CheckCircle2, MessageSquare, MessageSquarePlus, Gift, Pencil } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { t } from '@/i18n';
 import Badge from '@/components/ui/badge';
@@ -20,6 +20,7 @@ interface PayrollRowProps {
   onUpdate: (discordId: string, field: string, value: string | number | boolean) => void;
   onDelete: (discordId: string) => void;
   onConfirm?: (entryId: string, confirmed: boolean) => void;
+  onEdit?: (entry: LocalPayrollEntry) => void;
   dateRange: string;
 }
 
@@ -88,6 +89,7 @@ export default function PayrollRow({
   onUpdate,
   onDelete,
   onConfirm,
+  onEdit,
 }: PayrollRowProps) {
   const tr = t();
   const counters = getPoleCounterFields(pole);
@@ -107,7 +109,6 @@ export default function PayrollRow({
         entry.is_inactive && 'opacity-50',
       )}
     >
-      {/* Discord Username */}
       <td className="px-3 py-2.5 text-sm">
         <div className="flex items-center gap-2">
           <InlineInput
@@ -124,12 +125,10 @@ export default function PayrollRow({
         </div>
       </td>
 
-      {/* Discord ID */}
       <td className="px-3 py-2.5 text-sm">
         <span className="font-mono text-xs text-text-secondary">{entry.discord_id}</span>
       </td>
 
-      {/* Steam ID */}
       <td className="px-3 py-2.5 text-sm">
         <InlineInput
           value={entry.steam_id ?? ''}
@@ -139,7 +138,6 @@ export default function PayrollRow({
         />
       </td>
 
-      {/* Grade */}
       <td className="px-3 py-2.5 text-sm">
         <span
           className="inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium"
@@ -149,7 +147,6 @@ export default function PayrollRow({
         </span>
       </td>
 
-      {/* Dynamic counter fields */}
       {counters.map((c) => (
         <td key={c.field} className="px-3 py-2.5 text-sm">
           <InlineInput
@@ -161,14 +158,12 @@ export default function PayrollRow({
         </td>
       ))}
 
-      {/* Total (modération uniquement) */}
       {showTotal && (
         <td className="px-3 py-2.5 text-center text-sm font-medium text-text-primary">
           {(entry.tickets_ig ?? 0) + (entry.tickets_discord ?? 0) + (entry.bda_count ?? 0)}
         </td>
       )}
 
-      {/* Commentaire */}
       <td className="px-3 py-2.5 text-center text-sm">
         <button
           onClick={() => { setCommentDraft(entry.commentaire ?? ''); setCommentModalOpen(true); }}
@@ -213,7 +208,6 @@ export default function PayrollRow({
         </Modal>
       </td>
 
-      {/* Réunion */}
       <td className="px-3 py-2.5 text-center text-sm">
         <InlineCheckbox
           checked={entry.presence_reunion}
@@ -222,7 +216,6 @@ export default function PayrollRow({
         />
       </td>
 
-      {/* Montant */}
       <td className="px-3 py-2.5 text-sm">
         <div className="flex items-center gap-1.5">
           <InlineInput
@@ -241,7 +234,6 @@ export default function PayrollRow({
         </div>
       </td>
 
-      {/* Inactif */}
       <td className="px-3 py-2.5 text-center text-sm">
         <InlineCheckbox
           checked={entry.is_inactive}
@@ -255,7 +247,6 @@ export default function PayrollRow({
         />
       </td>
 
-      {/* Confirmé */}
       {isCoordinator && (
         <td className="px-3 py-2.5 text-center text-sm">
           {entry.id && (
@@ -275,15 +266,27 @@ export default function PayrollRow({
         </td>
       )}
 
-      {/* Actions */}
-      {canDeleteOrAdd && (
+      {(canDeleteOrAdd || onEdit) && (
         <td className="px-3 py-2.5 text-sm">
-          <button
-            onClick={() => onDelete(entry.discord_id)}
-            className="rounded p-1 text-text-tertiary transition-colors hover:bg-danger/10 hover:text-danger"
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
+          <div className="flex items-center gap-1">
+            {onEdit && weekStatus !== 'locked' && (
+              <button
+                onClick={() => onEdit(entry)}
+                className="rounded p-1 text-text-tertiary transition-colors hover:bg-accent/10 hover:text-accent"
+                title="Modifier"
+              >
+                <Pencil className="h-4 w-4" />
+              </button>
+            )}
+            {canDeleteOrAdd && (
+              <button
+                onClick={() => onDelete(entry.discord_id)}
+                className="rounded p-1 text-text-tertiary transition-colors hover:bg-danger/10 hover:text-danger"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            )}
+          </div>
         </td>
       )}
     </tr>

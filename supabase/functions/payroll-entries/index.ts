@@ -17,7 +17,6 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     );
 
-    // --- GET ---
     if (req.method === 'GET') {
       const url = new URL(req.url);
       const weekId = url.searchParams.get('week_id');
@@ -29,7 +28,6 @@ serve(async (req) => {
 
       const allowedPoles = getAllowedPoles(user);
 
-      // No access at all
       if (Array.isArray(allowedPoles) && allowedPoles.length === 0) {
         return errorResponse('Accès refusé', 403);
       }
@@ -40,13 +38,11 @@ serve(async (req) => {
         .eq('payroll_week_id', weekId);
 
       if (poleParam) {
-        // User requested a specific pole
         if (allowedPoles !== null && !allowedPoles.includes(poleParam)) {
           return errorResponse('Accès refusé', 403);
         }
         query = query.eq('pole', poleParam);
       } else {
-        // No pole param: filter by allowed poles (coordinateur gets all)
         if (allowedPoles !== null) {
           query = query.in('pole', allowedPoles);
         }
@@ -121,7 +117,6 @@ serve(async (req) => {
       return jsonResponse(entries ?? []);
     }
 
-    // --- POST / PUT ---
     if (req.method === 'POST' || req.method === 'PUT') {
       const body = await req.json();
       const { week_id: weekId, pole, entries } = body;
@@ -134,7 +129,6 @@ serve(async (req) => {
         return errorResponse('Accès refusé', 403);
       }
 
-      // Guard: all entries must belong to the declared pole (prevents multi-pole injection)
       const hasWrongPole = entries.some(
         (e: Record<string, unknown>) => e.pole !== undefined && e.pole !== pole,
       );
@@ -142,7 +136,6 @@ serve(async (req) => {
         return errorResponse('Toutes les entrées doivent appartenir au pôle déclaré', 400);
       }
 
-      // Fetch the week
       const { data: week, error: weekError } = await supabase
         .from('payroll_weeks')
         .select('*')
@@ -157,7 +150,6 @@ serve(async (req) => {
         return errorResponse('Semaine introuvable', 404);
       }
 
-      // Check week status
       if (isAdmin(user)) {
         if (week.status === 'locked') {
           return errorResponse('Semaine verrouillée, modification impossible', 400);
@@ -168,7 +160,6 @@ serve(async (req) => {
         }
       }
 
-      // Get or create submission
       const { data: existingSubmission, error: subFetchError } = await supabase
         .from('payroll_submissions')
         .select('*')
@@ -203,7 +194,6 @@ serve(async (req) => {
         submissionId = newSubmission.id;
       }
 
-      // Lookup staff_ids by discord_id
       const discordIds = entries.map((e: { discord_id: string }) => e.discord_id);
       const { data: staffUsers } = await supabase
         .from('users')
@@ -220,7 +210,6 @@ serve(async (req) => {
       const isCoordinateur = isAdmin(user);
       const now = new Date().toISOString();
 
-      // Fetch existing entries to preserve confirmed_by_coordinator when resp saves
       const { data: existingEntries } = await supabase
         .from('payroll_entries')
         .select('discord_id, pole, confirmed_by_coordinator, confirmed_at')
@@ -260,7 +249,6 @@ serve(async (req) => {
           is_inactive: entry.is_inactive ?? false,
           filled_by_id: user.id,
           staff_id: discordToStaffId[entry.discord_id as string] ?? null,
-          // Preserve coordinator confirmations across resp saves
           confirmed_by_coordinator: existing?.confirmed_by_coordinator ?? false,
           confirmed_at: existing?.confirmed_at ?? null,
         };
@@ -273,7 +261,6 @@ serve(async (req) => {
         return row;
       });
 
-      // Re-verify week status just before writing (guard against TOCTOU race)
       const { data: freshWeek } = await supabase
         .from('payroll_weeks')
         .select('status')
@@ -296,7 +283,6 @@ serve(async (req) => {
       return jsonResponse(upserted ?? []);
     }
 
-    // --- PATCH (confirm/unconfirm entries — coordinateur only) ---
     if (req.method === 'PATCH') {
       if (!isAdmin(user)) {
         return errorResponse('Seul le coordinateur peut confirmer les entrées', 403);
@@ -309,9 +295,7 @@ serve(async (req) => {
         return errorResponse('confirmed est requis', 400);
       }
 
-      // Bulk confirm: entry_ids array
       if (Array.isArray(entry_ids) && entry_ids.length > 0) {
-        // Verify all entries belong to a non-locked week
         const { data: entries, error: fetchErr } = await supabase
           .from('payroll_entries')
           .select('id, payroll_week_id')
@@ -346,7 +330,6 @@ serve(async (req) => {
         return jsonResponse(updated ?? []);
       }
 
-      // Single confirm: entry_id
       if (!entry_id) {
         return errorResponse('entry_id ou entry_ids est requis', 400);
       }
@@ -360,7 +343,6 @@ serve(async (req) => {
       if (fetchErr) return errorResponse(fetchErr.message, 500);
       if (!entry) return errorResponse('Entrée introuvable', 404);
 
-      // Check week is not locked
       const { data: week, error: weekErr } = await supabase
         .from('payroll_weeks')
         .select('status')
@@ -389,7 +371,6 @@ serve(async (req) => {
       return jsonResponse(updated);
     }
 
-    // --- DELETE ---
     if (req.method === 'DELETE') {
       const url = new URL(req.url);
       const entryId = url.searchParams.get('entry_id');
@@ -398,7 +379,6 @@ serve(async (req) => {
         return errorResponse('entry_id est requis', 400);
       }
 
-      // Fetch the entry
       const { data: entry, error: entryError } = await supabase
         .from('payroll_entries')
         .select('id, pole, payroll_week_id')
@@ -413,7 +393,6 @@ serve(async (req) => {
         return errorResponse('Entrée introuvable', 404);
       }
 
-      // Fetch the associated week
       const { data: week, error: weekError } = await supabase
         .from('payroll_weeks')
         .select('status')

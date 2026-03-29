@@ -22,7 +22,6 @@ serve(async (req) => {
 
     const url = new URL(req.url);
 
-    // --- GET: check if a pole is locked ---
     if (req.method === 'GET') {
       const weekId = url.searchParams.get('week_id');
       const pole = url.searchParams.get('pole');
@@ -44,13 +43,11 @@ serve(async (req) => {
 
       if (!lock) return jsonResponse(null);
 
-      // Check if lock is stale
       const lockedAt = new Date(lock.locked_at).getTime();
       const now = Date.now();
       const age = (now - lockedAt) / 1000;
 
       if (age > LOCK_TTL_SECONDS) {
-        // Stale lock — delete it and return null
         await supabase.from('payroll_locks').delete().eq('id', lock.id);
         return jsonResponse(null);
       }
@@ -58,7 +55,6 @@ serve(async (req) => {
       return jsonResponse(lock);
     }
 
-    // --- POST: acquire or refresh lock ---
     if (req.method === 'POST') {
       const { week_id: weekId, pole } = await req.json();
 
@@ -70,7 +66,6 @@ serve(async (req) => {
         return errorResponse('Accès refusé', 403);
       }
 
-      // Check for existing lock
       const { data: existing } = await supabase
         .from('payroll_locks')
         .select('*')
@@ -81,12 +76,10 @@ serve(async (req) => {
       if (existing) {
         const age = (Date.now() - new Date(existing.locked_at).getTime()) / 1000;
 
-        // Another user holds a fresh lock
         if (existing.user_id !== user.id && age <= LOCK_TTL_SECONDS) {
           return jsonResponse({ locked_by: existing.username }, 409);
         }
 
-        // Owned by this user or stale — refresh it
         const { data: updated, error } = await supabase
           .from('payroll_locks')
           .update({ user_id: user.id, username: user.username ?? 'Inconnu', locked_at: new Date().toISOString() })
@@ -98,7 +91,6 @@ serve(async (req) => {
         return jsonResponse(updated);
       }
 
-      // No existing lock — create one
       const { data: created, error } = await supabase
         .from('payroll_locks')
         .insert({
@@ -111,7 +103,6 @@ serve(async (req) => {
         .single();
 
       if (error) {
-        // Unique constraint violation: another request acquired the lock between our check and insert
         if (error.code === '23505') {
           const { data: freshLock } = await supabase
             .from('payroll_locks')
@@ -126,7 +117,6 @@ serve(async (req) => {
       return jsonResponse(created);
     }
 
-    // --- DELETE: release lock ---
     if (req.method === 'DELETE') {
       const { week_id: weekId, pole } = await req.json();
 

@@ -26,7 +26,6 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     );
 
-    // --- GET ?week_id=xxx ---
     if (req.method === 'GET') {
       const url = new URL(req.url);
       const weekId = url.searchParams.get('week_id');
@@ -49,13 +48,11 @@ serve(async (req) => {
         return errorResponse(error.message, 500);
       }
 
-      // Non-admins see only their own primes
       const allPrimes = data ?? [];
       const primes = isAdmin(user) ? allPrimes : allPrimes.filter(
         (p: { submitted_by_id: string | null }) => p.submitted_by_id === user.id,
       );
 
-      // Resolve submitted_by_id → submitted_by_username
       const userIds = [...new Set(primes.map((p: { submitted_by_id: string | null }) => p.submitted_by_id).filter(Boolean))];
       const usernameMap: Record<string, string> = {};
       if (userIds.length > 0) {
@@ -70,7 +67,6 @@ serve(async (req) => {
       return jsonResponse(enriched);
     }
 
-    // --- POST: create or upsert prime ---
     if (req.method === 'POST') {
       if (!isGerant(user) && !isAdmin(user) && !isResp(user)) {
         return errorResponse('Accès refusé', 403);
@@ -86,7 +82,6 @@ serve(async (req) => {
         return errorResponse('amount doit être un entier entre 1 et 1 000 000', 400);
       }
 
-      // Check week status
       const { data: week, error: weekError } = await supabase
         .from('payroll_weeks')
         .select('status')
@@ -101,7 +96,6 @@ serve(async (req) => {
         return errorResponse('La semaine est verrouillée', 400);
       }
 
-      // Check if prime already exists
       const { data: existing } = await supabase
         .from('primes')
         .select('*')
@@ -114,7 +108,6 @@ serve(async (req) => {
           return errorResponse('Cette prime a déjà été traitée et ne peut plus être modifiée', 400);
         }
 
-        // Update existing pending prime
         const { data: updated, error: updateError } = await supabase
           .from('primes')
           .update({
@@ -135,7 +128,6 @@ serve(async (req) => {
         return jsonResponse(updated);
       }
 
-      // Create new prime
       const { data: created, error: insertError } = await supabase
         .from('primes')
         .insert({
@@ -156,7 +148,6 @@ serve(async (req) => {
       return jsonResponse(created, 201);
     }
 
-    // --- PATCH: approve or reject ---
     if (req.method === 'PATCH') {
       if (!isAdmin(user)) {
         return errorResponse('Accès refusé', 403);
@@ -172,7 +163,6 @@ serve(async (req) => {
         return errorResponse("status doit être 'approved' ou 'rejected'", 400);
       }
 
-      // Fetch prime to check week status
       const { data: prime, error: primeError } = await supabase
         .from('primes')
         .select('*, payroll_weeks(status)')
@@ -207,7 +197,6 @@ serve(async (req) => {
       return jsonResponse(updated);
     }
 
-    // --- PUT: edit a pending prime (submitter or admin) ---
     if (req.method === 'PUT') {
       const { prime_id, amount, comment } = await req.json();
 
@@ -219,7 +208,6 @@ serve(async (req) => {
         return errorResponse('amount doit être un entier entre 1 et 1 000 000', 400);
       }
 
-      // Fetch prime with week status
       const { data: prime, error: primeError } = await supabase
         .from('primes')
         .select('*, payroll_weeks(status)')
@@ -239,7 +227,6 @@ serve(async (req) => {
         return errorResponse('La semaine est verrouillée', 400);
       }
 
-      // Only the original submitter or an admin (coordinateur/dev) can edit
       if (!isAdmin(user) && prime.submitted_by_id !== user.id) {
         return errorResponse('Accès refusé', 403);
       }
@@ -262,7 +249,6 @@ serve(async (req) => {
       return jsonResponse(updated);
     }
 
-    // --- DELETE: delete pending prime ---
     if (req.method === 'DELETE') {
       const { prime_id } = await req.json();
 
@@ -270,7 +256,6 @@ serve(async (req) => {
         return errorResponse('prime_id est requis', 400);
       }
 
-      // Fetch prime with week status
       const { data: prime, error: primeError } = await supabase
         .from('primes')
         .select('*, payroll_weeks(status)')
