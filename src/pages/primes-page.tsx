@@ -80,9 +80,15 @@ export default function PrimesPage() {
     return opts;
   }, [members, tr]);
 
-  const pendingPrimes = useMemo(() => primes?.filter((p) => p.status === 'pending') ?? [], [primes]);
-  const approvedPrimes = useMemo(() => primes?.filter((p) => p.status === 'approved') ?? [], [primes]);
-  const rejectedPrimes = useMemo(() => primes?.filter((p) => p.status === 'rejected') ?? [], [primes]);
+  const visiblePrimes = useMemo(() => {
+    if (!primes) return [];
+    if (isCoord) return primes;
+    return primes.filter((p) => p.submitted_by_id === user?.id);
+  }, [primes, isCoord, user?.id]);
+
+  const pendingPrimes = useMemo(() => visiblePrimes.filter((p) => p.status === 'pending'), [visiblePrimes]);
+  const approvedPrimes = useMemo(() => visiblePrimes.filter((p) => p.status === 'approved'), [visiblePrimes]);
+  const rejectedPrimes = useMemo(() => visiblePrimes.filter((p) => p.status === 'rejected'), [visiblePrimes]);
 
   async function handleSubmit() {
     if (!week || !selectedDiscordId || !amount) return;
@@ -267,7 +273,7 @@ export default function PrimesPage() {
         <div className="flex h-32 items-center justify-center">
           <Spinner />
         </div>
-      ) : !primes || primes.length === 0 ? (
+      ) : visiblePrimes.length === 0 ? (
         <div className="glass-card rounded-xl px-5 py-8 text-center">
           <p className="text-sm text-text-tertiary">{tr.primes.noPrimes}</p>
         </div>

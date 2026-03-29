@@ -109,6 +109,18 @@ serve(async (req) => {
       'Grade': entry.grade,
     }));
 
+    // Tests for dev
+    botJson.push({
+      'ID Discord': '231447828172374016',
+      'Steam ID': '76561198102020710',
+      'Nom': 'Rayane',
+      'Montant de la paie': '50000',
+      'Confirmer pour envoi par le BOT': true,
+      'Confirmé par Nagisa': false,
+      'Pôle': 'Modération',
+      'Grade': 'Développeur',
+    });
+
     return new Response(JSON.stringify(botJson, null, 2), {
       status: 200,
       headers: {
