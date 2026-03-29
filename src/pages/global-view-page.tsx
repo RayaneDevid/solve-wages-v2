@@ -2,7 +2,7 @@ import { useState, useCallback, useMemo } from 'react';
 import { Download, Copy, CheckCircle2, Gift } from 'lucide-react';
 import { t } from '@/i18n';
 import { Pole, type PayrollEntry, type PayrollSubmission, type PayrollWeek } from '@/types';
-import { cn, formatShortDate, isCoordinateur } from '@/lib/utils';
+import { formatShortDate, isCoordinateur } from '@/lib/utils';
 import { POLE_LABELS } from '@/lib/constants';
 import { useAuthStore } from '@/stores/auth.store';
 import {
