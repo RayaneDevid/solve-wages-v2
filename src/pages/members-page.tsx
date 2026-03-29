@@ -99,7 +99,7 @@ function getDefaultPole(isCoord: boolean, isGerant: boolean, userPole: Pole | nu
 
 function getAvailablePoles(isCoord: boolean, isGerant: boolean, userPole: Pole | null): Pole[] {
   if (isCoord) return Object.values(Pole);
-  if (isGerant) return [Pole.ADMINISTRATION, Pole.RESPONSABLES, Pole.MODERATION, Pole.ANIMATION, Pole.MJ, Pole.DOUANE];
+  if (isGerant) return Object.values(Pole).filter((p) => p !== Pole.GERANCE);
   if (userPole) return [userPole];
   return Object.values(Pole);
 }

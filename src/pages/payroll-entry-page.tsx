@@ -47,7 +47,7 @@ function getAvailablePoles(roles: Role[]): Pole[] {
   const poles = new Set<Pole>();
   for (const r of roles) {
     if (r === Role.GERANT_STAFF || r === Role.GERANT_RP || r === Role.GERANT_SERVEUR) {
-      [Pole.ADMINISTRATION, Pole.MODERATION, Pole.ANIMATION, Pole.MJ, Pole.DOUANE, Pole.RESPONSABLES].forEach((p) => poles.add(p));
+      Object.values(Pole).filter((p) => p !== Pole.GERANCE).forEach((p) => poles.add(p));
     } else {
       // resp_ roles fill their own pole's payroll (not responsables)
       const pole = RESP_PAYROLL_POLE[r] ?? getPoleForRole(r);

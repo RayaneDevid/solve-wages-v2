@@ -10,7 +10,7 @@ export const RESP_TO_POLE: Record<string, string> = {
   gerant_equilibrage: 'equilibrage_pvp',
 };
 
-export const GERANT_STAFF_POLES = ['administration', 'moderation', 'animation', 'mj', 'douane', 'responsables'];
+export const GERANT_STAFF_POLES = ['administration', 'responsables', 'moderation', 'animation', 'mj', 'douane', 'builder', 'lore', 'equilibrage_pvp', 'community_manager', 'support'];
 
 export interface AppUser {
   id: string;
