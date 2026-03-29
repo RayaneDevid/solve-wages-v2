@@ -41,5 +41,8 @@ export function getAllowedPoles(user: AppUser): string[] | null {
       if (respPole) poles.add(respPole);
     }
   }
+  // Users with no specific pole restrictions (e.g. administrateur, gerant_discord)
+  // can read all poles — they have no write access (handled by canAccessPole)
+  if (poles.size === 0) return null;
   return [...poles];
 }

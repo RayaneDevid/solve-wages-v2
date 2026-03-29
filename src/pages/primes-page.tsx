@@ -14,7 +14,7 @@ import {
 } from '@/hooks/queries/use-primes';
 import Button from '@/components/ui/button';
 import Input from '@/components/ui/input';
-import Select from '@/components/ui/select';
+import SearchableSelect from '@/components/ui/searchable-select';
 import Spinner from '@/components/ui/spinner';
 import Badge from '@/components/ui/badge';
 import WeekStatusBadge from '@/components/payroll/week-status-badge';
@@ -179,13 +179,12 @@ export default function PrimesPage() {
             <div className="flex flex-col gap-4">
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <div className="lg:col-span-2">
-                  <label className="mb-1.5 block text-xs font-medium text-text-secondary">
-                    {tr.primes.member}
-                  </label>
-                  <Select
+                  <SearchableSelect
+                    label={tr.primes.member}
                     value={selectedDiscordId}
-                    onChange={(e) => setSelectedDiscordId(e.target.value)}
+                    onChange={setSelectedDiscordId}
                     options={memberOptions}
+                    placeholder={tr.primes.selectMember}
                   />
                 </div>
                 <div>

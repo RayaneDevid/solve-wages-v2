@@ -74,10 +74,7 @@ serve(async (req) => {
 
         // Another user holds a fresh lock
         if (existing.user_id !== user.id && age <= LOCK_TTL_SECONDS) {
-          return errorResponse(
-            JSON.stringify({ locked_by: existing.username }),
-            409,
-          );
+          return jsonResponse({ locked_by: existing.username }, 409);
         }
 
         // Owned by this user or stale — refresh it

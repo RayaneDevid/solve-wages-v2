@@ -21,14 +21,8 @@ export async function acquireLock(weekId: string, pole: string): Promise<{ ok: t
   } catch (err: unknown) {
     const axiosErr = err as { response?: { status?: number; data?: unknown } };
     if (axiosErr.response?.status === 409) {
-      const body = axiosErr.response.data as { locked_by?: string } | string;
-      let lockedBy = 'Quelqu\'un d\'autre';
-      if (typeof body === 'string') {
-        try { lockedBy = (JSON.parse(body) as { locked_by?: string }).locked_by ?? lockedBy; } catch { /* ignore */ }
-      } else if (typeof body === 'object' && body !== null) {
-        lockedBy = body.locked_by ?? lockedBy;
-      }
-      return { ok: false, lockedBy };
+      const body = axiosErr.response.data as { locked_by?: string };
+      return { ok: false, lockedBy: body?.locked_by ?? 'Quelqu\'un d\'autre' };
     }
     throw err;
   }
