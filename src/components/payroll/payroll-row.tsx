@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Trash2, ShieldCheck, CheckCircle2, MessageSquare, MessageSquarePlus } from 'lucide-react';
+import { Trash2, ShieldCheck, CheckCircle2, MessageSquare, MessageSquarePlus, Gift } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { t } from '@/i18n';
 import Badge from '@/components/ui/badge';
@@ -16,6 +16,7 @@ interface PayrollRowProps {
   weekStatus: 'open' | 'closed' | 'locked';
   isCoordinator?: boolean;
   showTotal?: boolean;
+  primeAmount?: number;
   onUpdate: (discordId: string, field: string, value: string | number | boolean) => void;
   onDelete: (discordId: string) => void;
   onConfirm?: (entryId: string, confirmed: boolean) => void;
@@ -83,6 +84,7 @@ export default function PayrollRow({
   weekStatus,
   isCoordinator,
   showTotal,
+  primeAmount,
   onUpdate,
   onDelete,
   onConfirm,
@@ -222,13 +224,21 @@ export default function PayrollRow({
 
       {/* Montant */}
       <td className="px-3 py-2.5 text-sm">
-        <InlineInput
-          type="number"
-          value={entry.montant}
-          onChange={(v) => onUpdate(entry.discord_id, 'montant', parseInt(v) || 0)}
-          disabled={!canEditPayFields}
-          className={cn('w-20 font-medium', entry.is_inactive ? 'text-text-tertiary' : 'text-accent')}
-        />
+        <div className="flex items-center gap-1.5">
+          <InlineInput
+            type="number"
+            value={entry.montant}
+            onChange={(v) => onUpdate(entry.discord_id, 'montant', parseInt(v) || 0)}
+            disabled={!canEditPayFields}
+            className={cn('w-20 font-medium', entry.is_inactive ? 'text-text-tertiary' : 'text-accent')}
+          />
+          {primeAmount && (
+            <span className="flex items-center gap-0.5 text-xs text-accent" title={`Prime : +${primeAmount.toLocaleString('fr-FR')} crédits`}>
+              <Gift className="h-3 w-3" />
+              +{primeAmount.toLocaleString('fr-FR')}
+            </span>
+          )}
+        </div>
       </td>
 
       {/* Inactif */}

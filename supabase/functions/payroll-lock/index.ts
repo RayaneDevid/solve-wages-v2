@@ -3,6 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { corsHeaders } from '../_shared/cors.ts';
 import { getUser } from '../_shared/auth.ts';
 import { jsonResponse, errorResponse } from '../_shared/response.ts';
+import { canAccessPole } from '../_shared/roles.ts';
 
 // Lock expires after 30s without heartbeat
 const LOCK_TTL_SECONDS = 30;
@@ -28,6 +29,10 @@ serve(async (req) => {
 
       if (!weekId || !pole) {
         return errorResponse('week_id et pole sont requis', 400);
+      }
+
+      if (!canAccessPole(user, pole)) {
+        return errorResponse('Accès refusé', 403);
       }
 
       const { data: lock } = await supabase
@@ -59,6 +64,10 @@ serve(async (req) => {
 
       if (!weekId || !pole) {
         return errorResponse('week_id et pole sont requis', 400);
+      }
+
+      if (!canAccessPole(user, pole)) {
+        return errorResponse('Accès refusé', 403);
       }
 
       // Check for existing lock
@@ -123,6 +132,10 @@ serve(async (req) => {
 
       if (!weekId || !pole) {
         return errorResponse('week_id et pole sont requis', 400);
+      }
+
+      if (!canAccessPole(user, pole)) {
+        return errorResponse('Accès refusé', 403);
       }
 
       await supabase

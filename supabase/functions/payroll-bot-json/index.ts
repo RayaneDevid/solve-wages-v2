@@ -97,12 +97,25 @@ serve(async (req) => {
       });
     }
 
-    // Map to the exact structure the bot expects
+    // Fetch approved primes for this week
+    const { data: primes } = await supabase
+      .from('primes')
+      .select('discord_id, amount')
+      .eq('payroll_week_id', weekId)
+      .eq('status', 'approved');
+
+    // Build a map discord_id → total approved prime amount
+    const primesMap = new Map<string, number>();
+    for (const p of primes ?? []) {
+      primesMap.set(p.discord_id, (primesMap.get(p.discord_id) ?? 0) + p.amount);
+    }
+
+    // Map to the exact structure the bot expects (montant includes approved primes)
     const botJson = (entries ?? []).map((entry: PayrollEntry) => ({
       'ID Discord': entry.discord_id,
       'Steam ID': entry.steam_id ?? '',
       'Nom': entry.discord_username,
-      'Montant de la paie': String(entry.montant),
+      'Montant de la paie': String(entry.montant + (primesMap.get(entry.discord_id) ?? 0)),
       'Confirmer pour envoi par le BOT': entry.confirmed_by_coordinator,
       'Confirmé par Nagisa': false,
       'Pôle': POLE_LABELS[entry.pole] ?? entry.pole,

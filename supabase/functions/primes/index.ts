@@ -49,8 +49,13 @@ serve(async (req) => {
         return errorResponse(error.message, 500);
       }
 
+      // Non-admins see only their own primes
+      const allPrimes = data ?? [];
+      const primes = isAdmin(user) ? allPrimes : allPrimes.filter(
+        (p: { submitted_by_id: string | null }) => p.submitted_by_id === user.id,
+      );
+
       // Resolve submitted_by_id → submitted_by_username
-      const primes = data ?? [];
       const userIds = [...new Set(primes.map((p: { submitted_by_id: string | null }) => p.submitted_by_id).filter(Boolean))];
       const usernameMap: Record<string, string> = {};
       if (userIds.length > 0) {
@@ -265,15 +270,20 @@ serve(async (req) => {
         return errorResponse('prime_id est requis', 400);
       }
 
-      // Fetch prime
+      // Fetch prime with week status
       const { data: prime, error: primeError } = await supabase
         .from('primes')
-        .select('*')
+        .select('*, payroll_weeks(status)')
         .eq('id', prime_id)
         .maybeSingle();
 
       if (primeError || !prime) {
         return errorResponse('Prime introuvable', 404);
+      }
+
+      const weekStatus = (prime.payroll_weeks as { status: string } | null)?.status;
+      if (weekStatus === 'locked') {
+        return errorResponse('La semaine est verrouillée', 400);
       }
 
       if (prime.status !== 'pending') {

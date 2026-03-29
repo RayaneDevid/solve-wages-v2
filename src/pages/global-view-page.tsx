@@ -373,36 +373,12 @@ export default function GlobalViewPage() {
                   weekStart={week.week_start}
                   weekEnd={week.week_end}
                   isCoordinator={isCoord}
+                  primesByDiscordId={approvedPrimesMap}
                   onUpdate={() => {}}
                   onDelete={() => {}}
                   onConfirm={handleConfirm}
                 />
-                {/* Approved primes for this pole */}
-                {polePrimes.length > 0 && (
-                  <div className="mt-2 glass-card rounded-xl px-4 py-2.5">
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <Gift className="h-3.5 w-3.5 text-accent" />
-                      <span className="text-xs font-semibold uppercase tracking-wider text-text-secondary">
-                        {tr.primes.approvedPrimes}
-                      </span>
-                    </div>
-                    <div className="flex flex-wrap gap-3">
-                      {polePrimes.map((prime) => {
-                        const entryMontant = approvedPrimesMap.get(prime.discord_id);
-                        const baseMontant = poleEntries.find((e) => e.discord_id === prime.discord_id)?.montant ?? 0;
-                        return (
-                          <div key={prime.id} className="flex items-center gap-1.5 text-xs text-text-secondary">
-                            <span className="font-medium text-text-primary">{prime.discord_username}</span>
-                            <span className="text-text-tertiary">
-                              {baseMontant.toLocaleString('fr-FR')} + {prime.amount.toLocaleString('fr-FR')} = {(baseMontant + (entryMontant ?? 0)).toLocaleString('fr-FR')} {tr.common.credits}
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-                {/* Clickable rows for edit */}
+{/* Clickable rows for edit */}
                 {week.status !== 'locked' && poleEntries.length > 0 && (
                   <div className="mt-2 flex flex-wrap gap-1">
                     {poleEntries.map((entry) => (

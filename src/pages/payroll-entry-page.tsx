@@ -106,6 +106,8 @@ export default function PayrollEntryPage() {
   localEntriesRef.current = localEntries;
   const weekRef = useRef(week);
   weekRef.current = week;
+  const selectedPoleRef = useRef(selectedPole);
+  selectedPoleRef.current = selectedPole;
 
   useEffect(() => {
     if (!editable || lockState.status !== 'owned') return;
@@ -117,7 +119,7 @@ export default function PayrollEntryPage() {
       try {
         await saveEntries.mutateAsync({
           week_id: weekRef.current.id,
-          pole: selectedPole,
+          pole: selectedPoleRef.current,
           entries: dirty.map((e) => ({
             discord_username: e.discord_username,
             discord_id: e.discord_id,

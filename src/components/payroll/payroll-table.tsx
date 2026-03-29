@@ -20,6 +20,7 @@ interface PayrollTableProps {
   weekStart?: string;
   weekEnd?: string;
   isCoordinator?: boolean;
+  primesByDiscordId?: Map<string, number>;
   onUpdate: (discordId: string, field: string, value: string | number | boolean) => void;
   onDelete: (discordId: string) => void;
   onConfirm?: (entryId: string, confirmed: boolean) => void;
@@ -33,6 +34,7 @@ export default function PayrollTable({
   weekStart,
   weekEnd,
   isCoordinator,
+  primesByDiscordId,
   onUpdate,
   onDelete,
   onConfirm,
@@ -131,6 +133,7 @@ export default function PayrollTable({
                 weekStatus={weekStatus}
                 isCoordinator={isCoordinator}
                 showTotal={showTotal}
+                primeAmount={primesByDiscordId?.get(entry.discord_id)}
                 onUpdate={onUpdate}
                 onDelete={onDelete}
                 onConfirm={onConfirm}
