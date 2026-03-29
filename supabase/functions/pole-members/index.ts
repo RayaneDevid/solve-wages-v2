@@ -290,6 +290,29 @@ serve(async (req) => {
         return errorResponse(updateError.message, 500);
       }
 
+      // Propagate identity fields to payroll entries in open weeks
+      const entryUpdates: Record<string, unknown> = {};
+      if (discord_username !== undefined) entryUpdates.discord_username = discord_username;
+      if (steam_id !== undefined) entryUpdates.steam_id = steam_id;
+      if (grade !== undefined) entryUpdates.grade = grade;
+
+      if (Object.keys(entryUpdates).length > 0) {
+        // Find open weeks
+        const { data: openWeeks } = await supabase
+          .from('payroll_weeks')
+          .select('id')
+          .eq('status', 'open');
+
+        if (openWeeks && openWeeks.length > 0) {
+          const openWeekIds = openWeeks.map((w: { id: string }) => w.id);
+          await supabase
+            .from('payroll_entries')
+            .update(entryUpdates)
+            .eq('discord_id', member.discord_id)
+            .in('payroll_week_id', openWeekIds);
+        }
+      }
+
       return jsonResponse(updated);
     }
 
