@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getPrimes, submitPrime, reviewPrime, deletePrime } from '@/api/primes.api';
+import { getPrimes, submitPrime, reviewPrime, updatePrime, deletePrime } from '@/api/primes.api';
 
 export function usePrimes(weekId: string | undefined) {
   return useQuery({
@@ -23,6 +23,16 @@ export function useReviewPrime() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: reviewPrime,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['primes'] });
+    },
+  });
+}
+
+export function useUpdatePrime() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: updatePrime,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['primes'] });
     },

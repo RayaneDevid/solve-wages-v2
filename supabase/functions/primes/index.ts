@@ -198,6 +198,61 @@ serve(async (req) => {
       return jsonResponse(updated);
     }
 
+    // --- PUT: edit a pending prime (submitter or admin) ---
+    if (req.method === 'PUT') {
+      const { prime_id, amount, comment } = await req.json();
+
+      if (!prime_id || amount == null) {
+        return errorResponse('prime_id et amount sont requis', 400);
+      }
+
+      if (typeof amount !== 'number' || amount <= 0) {
+        return errorResponse('amount doit être un entier positif', 400);
+      }
+
+      // Fetch prime with week status
+      const { data: prime, error: primeError } = await supabase
+        .from('primes')
+        .select('*, payroll_weeks(status)')
+        .eq('id', prime_id)
+        .maybeSingle();
+
+      if (primeError || !prime) {
+        return errorResponse('Prime introuvable', 404);
+      }
+
+      if (prime.status !== 'pending') {
+        return errorResponse('Seules les primes en attente peuvent être modifiées', 400);
+      }
+
+      const weekStatus = (prime.payroll_weeks as { status: string } | null)?.status;
+      if (weekStatus === 'locked') {
+        return errorResponse('La semaine est verrouillée', 400);
+      }
+
+      // Only the original submitter or an admin (coordinateur/dev) can edit
+      if (!isAdmin(user) && prime.submitted_by_id !== user.id) {
+        return errorResponse('Accès refusé', 403);
+      }
+
+      const { data: updated, error: updateError } = await supabase
+        .from('primes')
+        .update({
+          amount,
+          comment: comment ?? null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', prime_id)
+        .select()
+        .single();
+
+      if (updateError) {
+        return errorResponse(updateError.message, 500);
+      }
+
+      return jsonResponse(updated);
+    }
+
     // --- DELETE: delete pending prime ---
     if (req.method === 'DELETE') {
       const { prime_id } = await req.json();

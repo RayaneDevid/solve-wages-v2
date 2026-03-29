@@ -25,6 +25,15 @@ export async function reviewPrime(payload: {
   return data;
 }
 
+export async function updatePrime(payload: {
+  prime_id: string;
+  amount: number;
+  comment?: string;
+}): Promise<Prime> {
+  const { data } = await apiClient.put<Prime>('/primes', payload);
+  return data;
+}
+
 export async function deletePrime(primeId: string): Promise<void> {
   await apiClient.delete('/primes', { data: { prime_id: primeId } });
 }

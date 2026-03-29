@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
-import { Gift, Check, X, Trash2 } from 'lucide-react';
+import { Gift, Check, X, Trash2, Pencil } from 'lucide-react';
 import { t } from '@/i18n';
-import { type PrimeStatus } from '@/types';
+import { type Prime, type PrimeStatus } from '@/types';
 import { isCoordinateur, isGerantStaff, formatShortDate } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth.store';
 import { useCurrentWeek } from '@/hooks/queries/use-payroll';
@@ -10,6 +10,7 @@ import {
   usePrimes,
   useSubmitPrime,
   useReviewPrime,
+  useUpdatePrime,
   useDeletePrime,
 } from '@/hooks/queries/use-primes';
 import Button from '@/components/ui/button';
@@ -17,6 +18,7 @@ import Input from '@/components/ui/input';
 import SearchableSelect from '@/components/ui/searchable-select';
 import Spinner from '@/components/ui/spinner';
 import Badge from '@/components/ui/badge';
+import Modal from '@/components/ui/modal';
 import WeekStatusBadge from '@/components/payroll/week-status-badge';
 import { Table, TableHeader, TableBody, TableRow, TableCell } from '@/components/ui/table';
 import { showToast } from '@/components/ui/show-toast';
@@ -42,12 +44,18 @@ export default function PrimesPage() {
 
   const submitPrime = useSubmitPrime();
   const reviewPrime = useReviewPrime();
+  const updatePrime = useUpdatePrime();
   const deletePrime = useDeletePrime();
 
   // Form state for gerant new prime
   const [selectedDiscordId, setSelectedDiscordId] = useState('');
   const [amount, setAmount] = useState('');
   const [comment, setComment] = useState('');
+
+  // Edit modal state
+  const [editingPrime, setEditingPrime] = useState<Prime | null>(null);
+  const [editAmount, setEditAmount] = useState('');
+  const [editComment, setEditComment] = useState('');
 
   const weekLabel = week
     ? `${tr.payroll.weekOf} ${formatShortDate(week.week_start)} ${tr.payroll.to} ${formatShortDate(week.week_end)}`
@@ -126,6 +134,38 @@ export default function PrimesPage() {
     } catch {
       showToast(tr.primes.toast.errorDelete, 'error');
     }
+  }
+
+  function openEditModal(prime: Prime) {
+    setEditingPrime(prime);
+    setEditAmount(String(prime.amount));
+    setEditComment(prime.comment ?? '');
+  }
+
+  async function handleEditSave() {
+    if (!editingPrime || !editAmount) return;
+    const parsedAmount = parseInt(editAmount, 10);
+    if (isNaN(parsedAmount) || parsedAmount <= 0) return;
+
+    try {
+      await updatePrime.mutateAsync({
+        prime_id: editingPrime.id,
+        amount: parsedAmount,
+        comment: editComment.trim() || undefined,
+      });
+      showToast(tr.primes.toast.updated);
+      setEditingPrime(null);
+    } catch {
+      showToast(tr.primes.toast.errorUpdate, 'error');
+    }
+  }
+
+  function canEditPrime(prime: Prime): boolean {
+    if (weekLocked) return false;
+    if (prime.status !== 'pending') return false;
+    if (isCoord) return true;
+    if (user && prime.submitted_by_id === user.id) return true;
+    return false;
   }
 
   if (weekLoading) {
@@ -267,6 +307,17 @@ export default function PrimesPage() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
+                          {canEditPrime(prime) && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => openEditModal(prime)}
+                              className="text-accent hover:bg-accent/10"
+                            >
+                              <Pencil className="h-4 w-4" />
+                              {tr.primes.actions.edit}
+                            </Button>
+                          )}
                           {isCoord && !weekLocked && (
                             <>
                               <Button
@@ -395,6 +446,48 @@ export default function PrimesPage() {
           )}
         </div>
       )}
+
+      {/* Edit prime modal */}
+      <Modal
+        isOpen={!!editingPrime}
+        onClose={() => setEditingPrime(null)}
+        title={tr.primes.editPrime}
+      >
+        <div className="flex flex-col gap-4 p-6">
+          <p className="text-sm text-text-secondary">
+            {editingPrime?.discord_username}
+          </p>
+          <Input
+            label={tr.primes.amount}
+            type="number"
+            min={1}
+            value={editAmount}
+            onChange={(e) => setEditAmount(e.target.value)}
+            placeholder="0"
+          />
+          <Input
+            label={tr.primes.comment}
+            value={editComment}
+            onChange={(e) => setEditComment(e.target.value)}
+            placeholder="Optionnel"
+          />
+          <div className="flex justify-end gap-2">
+            <Button
+              variant="secondary"
+              onClick={() => setEditingPrime(null)}
+            >
+              {tr.primes.actions.cancel}
+            </Button>
+            <Button
+              onClick={handleEditSave}
+              loading={updatePrime.isPending}
+              disabled={!editAmount}
+            >
+              {tr.primes.actions.save}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
