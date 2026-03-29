@@ -80,11 +80,8 @@ export default function PrimesPage() {
     return opts;
   }, [members, tr]);
 
-  const visiblePrimes = useMemo(() => {
-    if (!primes) return [];
-    if (isCoord) return primes;
-    return primes.filter((p) => p.submitted_by_id === user?.id);
-  }, [primes, isCoord, user?.id]);
+  // Backend already filters primes based on role peers — just use as-is
+  const visiblePrimes = useMemo(() => primes ?? [], [primes]);
 
   const pendingPrimes = useMemo(() => visiblePrimes.filter((p) => p.status === 'pending'), [visiblePrimes]);
   const approvedPrimes = useMemo(() => visiblePrimes.filter((p) => p.status === 'approved'), [visiblePrimes]);

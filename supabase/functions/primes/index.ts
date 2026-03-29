@@ -49,9 +49,55 @@ serve(async (req) => {
       }
 
       const allPrimes = data ?? [];
-      const primes = isAdmin(user) ? allPrimes : allPrimes.filter(
-        (p: { submitted_by_id: string | null }) => p.submitted_by_id === user.id,
-      );
+
+      // Admin/coord see all; gérants see all resp + gérant primes; resp see primes from shared roles
+      let primes = allPrimes;
+      if (!isAdmin(user)) {
+        const peerIds = new Set<string>([user.id]);
+
+        if (isGerant(user)) {
+          // Gérants see primes from all gérants + all responsables
+          const { data: peers } = await supabase
+            .from('users')
+            .select('id, roles')
+            .filter('is_active', 'eq', true);
+
+          if (peers) {
+            for (const peer of peers) {
+              const peerRoles: string[] = peer.roles ?? [];
+              const isPeerGerantOrResp = peerRoles.some(
+                (r: string) => r.startsWith('resp_') || r === 'referent_streamer' || ['gerant_staff', 'gerant_rp', 'gerant_serveur'].includes(r),
+              );
+              if (isPeerGerantOrResp) peerIds.add(peer.id);
+            }
+          }
+        } else {
+          // Responsables see primes from users sharing at least one common resp role
+          const userRespRoles = user.roles.filter(
+            (r: string) => r.startsWith('resp_') || r === 'referent_streamer',
+          );
+
+          if (userRespRoles.length > 0) {
+            const { data: peers } = await supabase
+              .from('users')
+              .select('id, roles')
+              .filter('is_active', 'eq', true);
+
+            if (peers) {
+              for (const peer of peers) {
+                const peerRoles: string[] = peer.roles ?? [];
+                if (peerRoles.some((r: string) => userRespRoles.includes(r))) {
+                  peerIds.add(peer.id);
+                }
+              }
+            }
+          }
+        }
+
+        primes = allPrimes.filter(
+          (p: { submitted_by_id: string | null }) => p.submitted_by_id && peerIds.has(p.submitted_by_id),
+        );
+      }
 
       const userIds = [...new Set(primes.map((p: { submitted_by_id: string | null }) => p.submitted_by_id).filter(Boolean))];
       const usernameMap: Record<string, string> = {};
