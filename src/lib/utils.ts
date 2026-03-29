@@ -20,7 +20,7 @@ export function isCoordinateur(role: Role): boolean {
 }
 
 export function isGerantStaff(role: Role): boolean {
-  return role === Role.GERANT_STAFF;
+  return role === Role.GERANT_STAFF || role === Role.GERANT_RP || role === Role.GERANT_SERVEUR;
 }
 
 export function hasPanelAccess(role: Role): boolean {

@@ -46,7 +46,7 @@ function getAvailablePoles(roles: Role[]): Pole[] {
   if (roles.some((r) => isCoordinateur(r))) return Object.values(Pole);
   const poles = new Set<Pole>();
   for (const r of roles) {
-    if (r === Role.GERANT_STAFF) {
+    if (r === Role.GERANT_STAFF || r === Role.GERANT_RP || r === Role.GERANT_SERVEUR) {
       [Pole.ADMINISTRATION, Pole.MODERATION, Pole.ANIMATION, Pole.MJ, Pole.DOUANE, Pole.RESPONSABLES].forEach((p) => poles.add(p));
     } else {
       // resp_ roles fill their own pole's payroll (not responsables)
@@ -62,7 +62,7 @@ export default function PayrollEntryPage() {
   const user = useAuthStore((s) => s.user);
   const userRoles: Role[] = user?.roles ?? (user?.role ? [user.role] : []);
   const isCoord = userRoles.some((r) => isCoordinateur(r));
-  const isGerant = userRoles.includes(Role.GERANT_STAFF);
+  const isGerant = userRoles.some((r) => r === Role.GERANT_STAFF || r === Role.GERANT_RP || r === Role.GERANT_SERVEUR);
   const isResp = userRoles.some((r) => isPoleResponsible(r));
 
   const availablePoles = useMemo(

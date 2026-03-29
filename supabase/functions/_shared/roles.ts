@@ -25,7 +25,7 @@ export function isAdmin(user: AppUser): boolean {
 export function canAccessPole(user: AppUser, pole: string): boolean {
   if (isAdmin(user)) return true;
   return user.roles.some((r) => {
-    if (r === 'gerant_staff') return GERANT_STAFF_POLES.includes(pole);
+    if (r === 'gerant_staff' || r === 'gerant_rp' || r === 'gerant_serveur') return GERANT_STAFF_POLES.includes(pole);
     return RESP_TO_POLE[r] === pole;
   });
 }
@@ -34,7 +34,7 @@ export function getAllowedPoles(user: AppUser): string[] | null {
   if (isAdmin(user)) return null; // null = all poles
   const poles = new Set<string>();
   for (const r of user.roles) {
-    if (r === 'gerant_staff') {
+    if (r === 'gerant_staff' || r === 'gerant_rp' || r === 'gerant_serveur') {
       GERANT_STAFF_POLES.forEach((p) => poles.add(p));
     } else {
       const respPole = RESP_TO_POLE[r];
