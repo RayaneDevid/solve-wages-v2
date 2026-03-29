@@ -109,6 +109,23 @@ export interface BulkImportResult {
   errors: string[];
 }
 
+export type PrimeStatus = 'pending' | 'approved' | 'rejected';
+
+export interface Prime {
+  id: string;
+  payroll_week_id: string;
+  discord_id: string;
+  discord_username: string;
+  amount: number;
+  comment: string | null;
+  submitted_by_id: string | null;
+  status: PrimeStatus;
+  reviewed_by_id: string | null;
+  reviewed_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface PayrollEntry {
   id: string | null;
   payroll_week_id: string;

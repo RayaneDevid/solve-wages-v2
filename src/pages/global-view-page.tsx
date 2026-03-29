@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from 'react';
-import { Download, Copy, CheckCircle2 } from 'lucide-react';
+import { Download, Copy, CheckCircle2, Gift } from 'lucide-react';
 import { t } from '@/i18n';
 import { Pole, type PayrollEntry, type PayrollSubmission, type PayrollWeek } from '@/types';
 import { cn, formatShortDate, isCoordinateur } from '@/lib/utils';
@@ -13,6 +13,7 @@ import {
   useBulkConfirmEntries,
   useExportPayroll,
 } from '@/hooks/queries/use-payroll';
+import { usePrimes } from '@/hooks/queries/use-primes';
 import Button from '@/components/ui/button';
 import Select from '@/components/ui/select';
 import Spinner from '@/components/ui/spinner';
@@ -117,6 +118,7 @@ export default function GlobalViewPage() {
 
   const { data: week, isLoading: weekLoading } = useCurrentWeek();
   const { data: allEntries, isLoading: entriesLoading } = usePayrollEntries(week?.id);
+  const { data: primesData } = usePrimes(week?.id);
   const saveEntries = useSaveEntries();
   const confirmEntry = useConfirmEntry();
   const bulkConfirm = useBulkConfirmEntries();
@@ -128,11 +130,34 @@ export default function GlobalViewPage() {
 
   const polesToShow = filterPole === 'all' ? ALL_POLES : [filterPole as Pole];
 
+  // Build a map of approved primes by discord_id
+  const approvedPrimesMap = useMemo(() => {
+    const map = new Map<string, number>();
+    if (!primesData) return map;
+    for (const p of primesData) {
+      if (p.status === 'approved') {
+        map.set(p.discord_id, (map.get(p.discord_id) ?? 0) + p.amount);
+      }
+    }
+    return map;
+  }, [primesData]);
+
+  // Build a map of approved primes by discord_id → prime object (for display)
+  const approvedPrimesList = useMemo(
+    () => primesData?.filter((p) => p.status === 'approved') ?? [],
+    [primesData],
+  );
+
   const poleSummaries = ALL_POLES.map((pole) => {
     const poleEntries = entries.filter((e) => e.pole === pole);
+    const poleDiscordIds = new Set(poleEntries.map((e) => e.discord_id));
+    const primesTotal = approvedPrimesList
+      .filter((p) => poleDiscordIds.has(p.discord_id))
+      .reduce((sum, p) => sum + p.amount, 0);
     return {
       pole,
-      total: poleEntries.reduce((sum, e) => sum + e.montant, 0),
+      total: poleEntries.reduce((sum, e) => sum + e.montant, 0) + primesTotal,
+      primesTotal,
       count: poleEntries.length,
     };
   }).filter((ps) => ps.count > 0);
@@ -306,6 +331,8 @@ export default function GlobalViewPage() {
         <div className="flex flex-col gap-8">
           {polesToShow.map((pole) => {
             const poleEntries = entries.filter((e) => e.pole === pole);
+            const poleDiscordIds = new Set(poleEntries.map((e) => e.discord_id));
+            const polePrimes = approvedPrimesList.filter((p) => poleDiscordIds.has(p.discord_id));
             const poleUnconfirmedCount = poleEntries.filter((e) => e.id && !e.confirmed_by_coordinator).length;
             return (
               <div key={pole}>
@@ -320,6 +347,12 @@ export default function GlobalViewPage() {
                   <span className="text-xs text-text-tertiary">
                     {poleEntries.length} staffs
                   </span>
+                  {polePrimes.length > 0 && (
+                    <span className="flex items-center gap-1 text-xs text-accent">
+                      <Gift className="h-3.5 w-3.5" />
+                      {polePrimes.reduce((s, p) => s + p.amount, 0).toLocaleString('fr-FR')} {tr.common.credits}
+                    </span>
+                  )}
                   {isCoord && poleUnconfirmedCount > 0 && (
                     <Button
                       size="sm"
@@ -344,6 +377,31 @@ export default function GlobalViewPage() {
                   onDelete={() => {}}
                   onConfirm={handleConfirm}
                 />
+                {/* Approved primes for this pole */}
+                {polePrimes.length > 0 && (
+                  <div className="mt-2 glass-card rounded-xl px-4 py-2.5">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <Gift className="h-3.5 w-3.5 text-accent" />
+                      <span className="text-xs font-semibold uppercase tracking-wider text-text-secondary">
+                        {tr.primes.approvedPrimes}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-3">
+                      {polePrimes.map((prime) => {
+                        const entryMontant = approvedPrimesMap.get(prime.discord_id);
+                        const baseMontant = poleEntries.find((e) => e.discord_id === prime.discord_id)?.montant ?? 0;
+                        return (
+                          <div key={prime.id} className="flex items-center gap-1.5 text-xs text-text-secondary">
+                            <span className="font-medium text-text-primary">{prime.discord_username}</span>
+                            <span className="text-text-tertiary">
+                              {baseMontant.toLocaleString('fr-FR')} + {prime.amount.toLocaleString('fr-FR')} = {(baseMontant + (entryMontant ?? 0)).toLocaleString('fr-FR')} {tr.common.credits}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
                 {/* Clickable rows for edit */}
                 {week.status !== 'locked' && poleEntries.length > 0 && (
                   <div className="mt-2 flex flex-wrap gap-1">

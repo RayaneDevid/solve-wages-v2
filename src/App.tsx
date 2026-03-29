@@ -19,6 +19,7 @@ import GlobalViewPage from '@/pages/global-view-page';
 import HistoryPage from '@/pages/history-page';
 import MembersPage from '@/pages/members-page';
 import AdminPage from '@/pages/admin-page';
+import PrimesPage from '@/pages/primes-page';
 import NotFoundPage from '@/pages/not-found-page';
 import Spinner from '@/components/ui/spinner';
 import ToastContainer from '@/components/ui/toast';
@@ -50,6 +51,14 @@ const PAYROLL_ROLES: Role[] = [
   Role.RESP_EQUILIBRAGE_PVP,
   Role.RESP_CM,
   Role.GERANT_EQUILIBRAGE,
+];
+
+const PRIMES_ROLES: Role[] = [
+  Role.DEVELOPPEUR,
+  Role.COORDINATEUR,
+  Role.GERANT_STAFF,
+  Role.GERANT_RP,
+  Role.GERANT_SERVEUR,
 ];
 
 function AppRoutes() {
@@ -107,6 +116,13 @@ function AppRoutes() {
       <Route element={<ProtectedRoute allowedRoles={PAYROLL_ROLES} />}>
         <Route element={<Layout />}>
           <Route path="/payroll" element={<PayrollEntryPage />} />
+        </Route>
+      </Route>
+
+      {/* Primes: gerant roles + coord/dev */}
+      <Route element={<ProtectedRoute allowedRoles={PRIMES_ROLES} />}>
+        <Route element={<Layout />}>
+          <Route path="/primes" element={<PrimesPage />} />
         </Route>
       </Route>
 

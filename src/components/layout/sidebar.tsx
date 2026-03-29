@@ -8,6 +8,7 @@ import {
   Shield,
   LogOut,
   ChevronLeft,
+  Gift,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth.store';
@@ -52,6 +53,12 @@ export default function Sidebar() {
       label: tr.nav.members,
       icon: <Users className="h-[18px] w-[18px]" />,
       visible: true,
+    },
+    {
+      to: '/primes',
+      label: tr.nav.primes,
+      icon: <Gift className="h-[18px] w-[18px]" />,
+      visible: isCoordinateur(role) || isGerantStaff(role),
     },
     {
       to: '/global',

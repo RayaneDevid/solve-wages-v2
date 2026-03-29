@@ -1,5 +1,6 @@
-import { useState, useCallback, useMemo } from 'react';
-import { Send, Save, EyeOff, Eye } from 'lucide-react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { Send, Save, EyeOff, Eye, Lock } from 'lucide-react';
+import { usePayrollLock } from '@/hooks/use-payroll-lock';
 import { t } from '@/i18n';
 import { Role, Pole, type PayrollEntry, type PayrollWeek, type PayrollSubmission } from '@/types';
 import { useAuthStore } from '@/stores/auth.store';
@@ -94,6 +95,54 @@ export default function PayrollEntryPage() {
     () => serverEntries?.map(toLocalEntry) ?? [],
   );
   const [hasLocalChanges, setHasLocalChanges] = useState(false);
+
+  // Lock: prevent concurrent editing
+  const lockState = usePayrollLock(editable ? week?.id : undefined, editable ? selectedPole : undefined);
+  const isBlocked = lockState.status === 'blocked';
+  const lockedBy = lockState.status === 'blocked' ? lockState.lockedBy : null;
+
+  // Auto-save every 20s when there are unsaved changes and we own the lock
+  const localEntriesRef = useRef(localEntries);
+  localEntriesRef.current = localEntries;
+  const weekRef = useRef(week);
+  weekRef.current = week;
+
+  useEffect(() => {
+    if (!editable || lockState.status !== 'owned') return;
+
+    const interval = setInterval(async () => {
+      if (!weekRef.current || !hasLocalChanges) return;
+      const dirty = localEntriesRef.current.filter((e) => e._dirty || e._isNew);
+      if (dirty.length === 0) return;
+      try {
+        await saveEntries.mutateAsync({
+          week_id: weekRef.current.id,
+          pole: selectedPole,
+          entries: dirty.map((e) => ({
+            discord_username: e.discord_username,
+            discord_id: e.discord_id,
+            steam_id: e.steam_id,
+            grade: e.grade,
+            tickets_ig: e.tickets_ig,
+            tickets_discord: e.tickets_discord,
+            bda_count: e.bda_count,
+            nb_animations: e.nb_animations,
+            nb_animations_mj: e.nb_animations_mj,
+            nb_candidatures_ecrites: e.nb_candidatures_ecrites,
+            nb_oraux: e.nb_oraux,
+            commentaire: e.commentaire,
+            presence_reunion: e.presence_reunion,
+            montant: e.montant,
+            is_inactive: e.is_inactive,
+          })),
+        });
+        setHasLocalChanges(false);
+      } catch { /* silent auto-save failure */ }
+    }, 20_000);
+
+    return () => clearInterval(interval);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editable, lockState.status, selectedPole, hasLocalChanges]);
 
   // Sync server entries to local state when they change (React-recommended "store previous props" pattern)
   const [prevServerEntries, setPrevServerEntries] = useState(serverEntries);
@@ -260,6 +309,16 @@ export default function PayrollEntryPage() {
     return (
       <div className="flex h-64 flex-col items-center justify-center gap-2">
         <p className="text-sm text-text-tertiary">{tr.dashboard.noWeekDescription}</p>
+      </div>
+    );
+  }
+
+  if (isBlocked) {
+    return (
+      <div className="flex h-64 flex-col items-center justify-center gap-3">
+        <Lock className="h-8 w-8 text-text-tertiary" />
+        <p className="text-sm font-medium text-text-primary">Saisie en cours par <span className="text-accent">{lockedBy}</span></p>
+        <p className="text-xs text-text-tertiary">Cette page se débloquera automatiquement dès qu'il aura terminé.</p>
       </div>
     );
   }
