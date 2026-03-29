@@ -45,7 +45,20 @@ serve(async (req) => {
         return errorResponse(error.message, 500);
       }
 
-      return jsonResponse(data ?? []);
+      // Resolve submitted_by_id → submitted_by_username
+      const primes = data ?? [];
+      const userIds = [...new Set(primes.map((p: { submitted_by_id: string | null }) => p.submitted_by_id).filter(Boolean))];
+      const usernameMap: Record<string, string> = {};
+      if (userIds.length > 0) {
+        const { data: users } = await supabase.from('users').select('id, username').in('id', userIds);
+        if (users) { for (const u of users) { usernameMap[u.id] = u.username; } }
+      }
+      const enriched = primes.map((p: Record<string, unknown>) => ({
+        ...p,
+        submitted_by_username: p.submitted_by_id ? (usernameMap[p.submitted_by_id as string] ?? null) : null,
+      }));
+
+      return jsonResponse(enriched);
     }
 
     // --- POST: create or upsert prime ---

@@ -263,7 +263,7 @@ export default function PrimesPage() {
                         <span className="text-text-secondary">{prime.comment ?? '—'}</span>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="default">{prime.submitted_by_id ?? '—'}</Badge>
+                        <span className="text-sm text-text-secondary">{prime.submitted_by_username ?? '—'}</span>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">

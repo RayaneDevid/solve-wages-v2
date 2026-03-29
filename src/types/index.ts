@@ -119,6 +119,7 @@ export interface Prime {
   amount: number;
   comment: string | null;
   submitted_by_id: string | null;
+  submitted_by_username: string | null;
   status: PrimeStatus;
   reviewed_by_id: string | null;
   reviewed_at: string | null;

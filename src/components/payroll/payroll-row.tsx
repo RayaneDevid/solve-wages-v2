@@ -1,7 +1,10 @@
-import { Trash2, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { useState } from 'react';
+import { Trash2, ShieldCheck, CheckCircle2, MessageSquare, MessageSquarePlus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { t } from '@/i18n';
 import Badge from '@/components/ui/badge';
+import Modal from '@/components/ui/modal';
+import Button from '@/components/ui/button';
 import { getGradeColor, getPoleCounterFields } from '@/lib/constants';
 import type { Pole } from '@/types';
 import type { LocalPayrollEntry } from './payroll-table';
@@ -82,6 +85,8 @@ export default function PayrollRow({
 }: PayrollRowProps) {
   const tr = t();
   const counters = getPoleCounterFields(pole);
+  const [commentModalOpen, setCommentModalOpen] = useState(false);
+  const [commentDraft, setCommentDraft] = useState('');
   const canEditPayFields = editable && weekStatus === 'open' && !entry.is_inactive;
   const canDeleteOrAdd = editable && weekStatus !== 'locked';
   const isNew = entry._isNew;
@@ -158,13 +163,48 @@ export default function PayrollRow({
       )}
 
       {/* Commentaire */}
-      <td className="px-3 py-2.5 text-sm">
-        <InlineInput
-          value={entry.commentaire ?? ''}
-          onChange={(v) => onUpdate(entry.discord_id, 'commentaire', v)}
-          disabled={!canEditPayFields}
-          className="w-24"
-        />
+      <td className="px-3 py-2.5 text-center text-sm">
+        <button
+          onClick={() => { setCommentDraft(entry.commentaire ?? ''); setCommentModalOpen(true); }}
+          className={cn(
+            'rounded p-1 transition-colors',
+            entry.commentaire
+              ? 'text-accent hover:bg-accent/10'
+              : 'text-text-tertiary hover:bg-white/[0.05] hover:text-text-secondary',
+          )}
+          title={entry.commentaire || tr.payroll.fields.commentaire}
+        >
+          {entry.commentaire
+            ? <MessageSquare className="h-4 w-4" />
+            : <MessageSquarePlus className="h-4 w-4" />}
+        </button>
+
+        <Modal
+          isOpen={commentModalOpen}
+          onClose={() => setCommentModalOpen(false)}
+          title={`${tr.payroll.fields.commentaire} — ${entry.discord_username}`}
+        >
+          <div className="flex flex-col gap-4">
+            <textarea
+              value={commentDraft}
+              onChange={(e) => setCommentDraft(e.target.value)}
+              disabled={!canEditPayFields}
+              rows={4}
+              placeholder={canEditPayFields ? 'Saisir un commentaire...' : 'Aucun commentaire'}
+              className="w-full resize-none rounded-lg border border-border-secondary bg-white/[0.03] px-3 py-2 text-sm text-text-primary placeholder:text-text-tertiary focus:border-accent/40 focus:outline-none focus:ring-1 focus:ring-accent/20 disabled:cursor-default disabled:opacity-60"
+            />
+            <div className="flex justify-end gap-3">
+              <Button variant="secondary" onClick={() => setCommentModalOpen(false)}>
+                {canEditPayFields ? tr.common.cancel : tr.common.close}
+              </Button>
+              {canEditPayFields && (
+                <Button onClick={() => { onUpdate(entry.discord_id, 'commentaire', commentDraft); setCommentModalOpen(false); }}>
+                  {tr.common.save}
+                </Button>
+              )}
+            </div>
+          </div>
+        </Modal>
       </td>
 
       {/* Réunion */}
