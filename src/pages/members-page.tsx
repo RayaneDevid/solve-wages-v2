@@ -4,7 +4,7 @@ import { t } from '@/i18n';
 import { Role, Pole, type PoleMember } from '@/types';
 import { useAuthStore } from '@/stores/auth.store';
 import { isCoordinateur, isGerantStaff, getPoleForRole, isPoleResponsible } from '@/lib/utils';
-import { POLE_LABELS, GRADES_BY_POLE, getGradeColor, compareByGradeThenName, GRADE_TO_ROLE, ROLE_HIERARCHY } from '@/lib/constants';
+import { POLE_LABELS, GRADES_BY_POLE, getGradeColor, compareByGradeThenName, GRADE_TO_ROLE, ROLE_HIERARCHY, RESP_PAYROLL_POLE } from '@/lib/constants';
 import { useMembers, useAddMember, useUpdateMember, useDeleteMember, useBulkImport } from '@/hooks/queries/use-members';
 import Button from '@/components/ui/button';
 import Select from '@/components/ui/select';
@@ -193,7 +193,7 @@ export default function MembersPage() {
   const user = useAuthStore((s) => s.user);
   const isCoord = user ? isCoordinateur(user.role) : false;
   const isGerant = user ? isGerantStaff(user.role) : false;
-  const userPole = user ? getPoleForRole(user.role) : null;
+  const userPole = user ? (RESP_PAYROLL_POLE[user.role as Role] ?? getPoleForRole(user.role)) : null;
   const canManage = isCoord || isGerant || (user ? isPoleResponsible(user.role) || user.role === Role.GERANT_EQUILIBRAGE : false);
 
   const availablePoles = useMemo(
