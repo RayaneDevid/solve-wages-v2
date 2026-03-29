@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { Gift, Check, X, Trash2, Pencil } from 'lucide-react';
 import { t } from '@/i18n';
 import { type Prime, type PrimeStatus } from '@/types';
@@ -167,13 +167,13 @@ export default function PrimesPage() {
     }
   }
 
-  function canEditPrime(prime: Prime): boolean {
+  const canEditPrime = useCallback((prime: Prime): boolean => {
     if (weekLocked) return false;
     if (prime.status !== 'pending') return false;
     if (isCoord) return true;
     if (user && prime.submitted_by_id === user.id) return true;
     return false;
-  }
+  }, [weekLocked, isCoord, user]);
 
   if (weekLoading) {
     return (

@@ -22,13 +22,18 @@ export function usePayrollLock(weekId: string | undefined, pole: string | undefi
   const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const ownedRef = useRef(false);
+  // Refs to avoid stale closures in intervals when weekId/pole change
+  const weekIdRef = useRef(weekId);
+  const poleRef = useRef(pole);
+  weekIdRef.current = weekId;
+  poleRef.current = pole;
 
   const stopIntervals = useCallback(() => {
     if (heartbeatRef.current) { clearInterval(heartbeatRef.current); heartbeatRef.current = null; }
     if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
   }, []);
 
-  const release = useCallback(async () => {
+  const release = useCallback(async (): Promise<void> => {
     if (!weekId || !pole || !ownedRef.current) return;
     ownedRef.current = false;
     stopIntervals();
@@ -72,11 +77,23 @@ export function usePayrollLock(weekId: string | undefined, pole: string | undefi
       setLockState({ status: 'owned' });
 
       // Heartbeat to keep lock alive
+      let heartbeatFailures = 0;
       heartbeatRef.current = setInterval(async () => {
-        if (!weekId || !pole) return;
+        const wId = weekIdRef.current;
+        const p = poleRef.current;
+        if (!wId || !p) return;
         try {
-          await acquireLock(weekId, pole);
-        } catch { /* ignore heartbeat errors */ }
+          await acquireLock(wId, p);
+          heartbeatFailures = 0;
+        } catch {
+          heartbeatFailures++;
+          // After 5 consecutive failures (~75s) the lock has likely expired
+          if (heartbeatFailures >= 5) {
+            stopIntervals();
+            ownedRef.current = false;
+            setLockState({ status: 'error' });
+          }
+        }
       }, HEARTBEAT_INTERVAL);
     }
 

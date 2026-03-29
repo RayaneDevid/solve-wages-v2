@@ -101,7 +101,19 @@ serve(async (req) => {
         .select()
         .single();
 
-      if (error) return errorResponse(error.message, 500);
+      if (error) {
+        // Unique constraint violation: another request acquired the lock between our check and insert
+        if (error.code === '23505') {
+          const { data: freshLock } = await supabase
+            .from('payroll_locks')
+            .select('username')
+            .eq('payroll_week_id', weekId)
+            .eq('pole', pole)
+            .maybeSingle();
+          return jsonResponse({ locked_by: freshLock?.username ?? 'Quelqu\'un d\'autre' }, 409);
+        }
+        return errorResponse(error.message, 500);
+      }
       return jsonResponse(created);
     }
 

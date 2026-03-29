@@ -24,11 +24,10 @@ export async function updateUser(payload: {
   return data;
 }
 
-export async function deleteUser(userId: string) {
-  const { data } = await apiClient.delete('/admin-users', {
+export async function deleteUser(userId: string): Promise<void> {
+  await apiClient.delete('/admin-users', {
     data: { user_id: userId },
   });
-  return data;
 }
 
 export async function bulkImportUsers(payload: {

@@ -72,6 +72,10 @@ function InlineCheckbox({
   );
 }
 
+function getNumericField(entry: LocalPayrollEntry, field: string): number {
+  return (entry as unknown as Record<string, unknown>)[field] as number ?? 0;
+}
+
 export default function PayrollRow({
   entry,
   pole,
@@ -148,7 +152,7 @@ export default function PayrollRow({
         <td key={c.field} className="px-3 py-2.5 text-sm">
           <InlineInput
             type="number"
-            value={(entry as unknown as Record<string, unknown>)[c.field] as number ?? 0}
+            value={getNumericField(entry, c.field)}
             onChange={(v) => onUpdate(entry.discord_id, c.field, parseInt(v) || 0)}
             disabled={!canEditPayFields}
           />

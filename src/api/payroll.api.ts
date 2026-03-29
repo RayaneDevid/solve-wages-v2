@@ -97,6 +97,7 @@ export async function exportPayrollCsv(weekId: string): Promise<Blob> {
     params: { week_id: weekId, format: 'csv' },
     responseType: 'blob',
   });
+  // axios doesn't reflect responseType: 'blob' in its generic, cast is safe here
   return data as Blob;
 }
 

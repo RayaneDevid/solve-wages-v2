@@ -383,7 +383,7 @@ export function getGradeColor(grade: string): { bg: string; text: string } {
   return GRADE_COLORS[grade] ?? { bg: 'rgba(255, 255, 255, 0.06)', text: '#9b8a75' };
 }
 
-const POLE_COUNTER_FIELDS: Record<string, { field: string; label: string }[]> = {
+const POLE_COUNTER_FIELDS: Partial<Record<Pole, { field: string; label: string }[]>> = {
   moderation: [
     { field: 'tickets_ig', label: 'ticketsIg' },
     { field: 'tickets_discord', label: 'ticketsDiscord' },

@@ -28,7 +28,11 @@ export async function getUser(req: Request): Promise<AppUser> {
     throw new HttpError('JWT manquant', 401);
   }
 
-  const jwt = authHeader.replace('Bearer ', '');
+  const parts = authHeader.split(' ');
+  if (parts.length !== 2 || parts[0] !== 'Bearer') {
+    throw new HttpError('JWT invalide', 401);
+  }
+  const jwt = parts[1];
 
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL')!,
@@ -48,8 +52,12 @@ export async function getUser(req: Request): Promise<AppUser> {
     .eq('supabase_auth_id', authUser.id)
     .single();
 
-  if (userError || !appUser) {
-    throw new HttpError('Utilisateur non trouvé', 403);
+  if (userError) {
+    throw new HttpError('Erreur base de données', 500);
+  }
+  if (!appUser) {
+    // Return 401 (not 403/404) to avoid revealing whether a user exists
+    throw new HttpError('Authentification échouée', 401);
   }
 
   if (!appUser.is_active) {

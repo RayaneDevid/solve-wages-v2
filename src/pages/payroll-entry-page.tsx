@@ -137,7 +137,10 @@ export default function PayrollEntryPage() {
           })),
         });
         setHasLocalChanges(false);
-      } catch { /* silent auto-save failure */ }
+      } catch (err) {
+        // Don't reset hasLocalChanges on failure — data is not saved
+        console.error('[auto-save] échec de la sauvegarde automatique:', err);
+      }
     }, 20_000);
 
     return () => clearInterval(interval);

@@ -134,6 +134,14 @@ serve(async (req) => {
         return errorResponse('Accès refusé', 403);
       }
 
+      // Guard: all entries must belong to the declared pole (prevents multi-pole injection)
+      const hasWrongPole = entries.some(
+        (e: Record<string, unknown>) => e.pole !== undefined && e.pole !== pole,
+      );
+      if (hasWrongPole) {
+        return errorResponse('Toutes les entrées doivent appartenir au pôle déclaré', 400);
+      }
+
       // Fetch the week
       const { data: week, error: weekError } = await supabase
         .from('payroll_weeks')
@@ -264,6 +272,17 @@ serve(async (req) => {
 
         return row;
       });
+
+      // Re-verify week status just before writing (guard against TOCTOU race)
+      const { data: freshWeek } = await supabase
+        .from('payroll_weeks')
+        .select('status')
+        .eq('id', weekId)
+        .single();
+
+      if (!freshWeek || freshWeek.status === 'locked' || (!isCoordinateur && freshWeek.status !== 'open')) {
+        return errorResponse('Semaine verrouillée ou fermée, modification impossible', 400);
+      }
 
       const { data: upserted, error: upsertError } = await supabase
         .from('payroll_entries')

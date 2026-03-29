@@ -77,8 +77,8 @@ serve(async (req) => {
         return errorResponse('week_id, discord_id, discord_username et amount sont requis', 400);
       }
 
-      if (typeof amount !== 'number' || amount <= 0) {
-        return errorResponse('amount doit être un entier positif', 400);
+      if (!Number.isFinite(amount) || !Number.isInteger(amount) || amount <= 0 || amount > 1_000_000) {
+        return errorResponse('amount doit être un entier entre 1 et 1 000 000', 400);
       }
 
       // Check week status
@@ -210,8 +210,8 @@ serve(async (req) => {
         return errorResponse('prime_id et amount sont requis', 400);
       }
 
-      if (typeof amount !== 'number' || amount <= 0) {
-        return errorResponse('amount doit être un entier positif', 400);
+      if (!Number.isFinite(amount) || !Number.isInteger(amount) || amount <= 0 || amount > 1_000_000) {
+        return errorResponse('amount doit être un entier entre 1 et 1 000 000', 400);
       }
 
       // Fetch prime with week status
