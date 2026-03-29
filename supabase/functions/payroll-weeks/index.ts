@@ -36,13 +36,29 @@ serve(async (req) => {
       const current = url.searchParams.get('current');
 
       if (current === 'true') {
-        const { weekStart } = getCurrentWeekDates();
-
-        const { data: week, error: weekError } = await supabase
+        // Find the most recent non-locked week first (open or closed).
+        // Only fall back to the current calendar week if none exists.
+        const { data: activeWeek, error: activeWeekError } = await supabase
           .from('payroll_weeks')
           .select('*')
-          .eq('week_start', weekStart)
+          .in('status', ['open', 'closed'])
+          .order('week_start', { ascending: false })
+          .limit(1)
           .maybeSingle();
+
+        if (activeWeekError) {
+          return errorResponse(activeWeekError.message, 500);
+        }
+
+        const { weekStart } = getCurrentWeekDates();
+
+        const { data: week, error: weekError } = activeWeek
+          ? { data: activeWeek, error: null }
+          : await supabase
+              .from('payroll_weeks')
+              .select('*')
+              .eq('week_start', weekStart)
+              .maybeSingle();
 
         if (weekError) {
           return errorResponse(weekError.message, 500);
