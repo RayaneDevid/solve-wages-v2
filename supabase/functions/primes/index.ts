@@ -50,7 +50,7 @@ serve(async (req) => {
 
     // --- POST: create or upsert prime ---
     if (req.method === 'POST') {
-      if (!isGerant(user)) {
+      if (!isGerant(user) && !isAdmin(user)) {
         return errorResponse('Accès refusé', 403);
       }
 

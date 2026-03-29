@@ -165,8 +165,8 @@ export default function PrimesPage() {
         </div>
       )}
 
-      {/* Gerant mode: form to submit a prime */}
-      {isGerant && !weekLocked && (
+      {/* Submit form: gérant + coord/dev */}
+      {(isGerant || isCoord) && !weekLocked && (
         <div className="glass-elevated rounded-xl p-5">
           <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-text-secondary">
             {tr.primes.newPrime}
