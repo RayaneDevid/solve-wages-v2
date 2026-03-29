@@ -58,7 +58,7 @@ export default function Sidebar() {
       to: '/primes',
       label: tr.nav.primes,
       icon: <Gift className="h-[18px] w-[18px]" />,
-      visible: isCoordinateur(role) || isGerantStaff(role),
+      visible: isCoordinateur(role) || isGerantStaff(role) || isPoleResponsible(role),
     },
     {
       to: '/global',

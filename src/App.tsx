@@ -59,6 +59,15 @@ const PRIMES_ROLES: Role[] = [
   Role.GERANT_STAFF,
   Role.GERANT_RP,
   Role.GERANT_SERVEUR,
+  Role.RESP_MODERATION,
+  Role.RESP_ANIMATION,
+  Role.RESP_MJ,
+  Role.RESP_DOUANE,
+  Role.RESP_BUILDER,
+  Role.RESP_LORE,
+  Role.RESP_EQUILIBRAGE_PVP,
+  Role.RESP_CM,
+  Role.REFERENT_STREAMER,
 ];
 
 function AppRoutes() {

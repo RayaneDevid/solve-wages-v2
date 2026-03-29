@@ -10,6 +10,10 @@ function isGerant(user: AppUser): boolean {
   return user.roles.some((r) => ['gerant_staff', 'gerant_rp', 'gerant_serveur'].includes(r));
 }
 
+function isResp(user: AppUser): boolean {
+  return user.roles.some((r) => r.startsWith('resp_') || r === 'referent_streamer');
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -31,7 +35,7 @@ serve(async (req) => {
         return errorResponse('week_id est requis', 400);
       }
 
-      if (!isAdmin(user) && !isGerant(user)) {
+      if (!isAdmin(user) && !isGerant(user) && !isResp(user)) {
         return errorResponse('Accès refusé', 403);
       }
 
@@ -63,7 +67,7 @@ serve(async (req) => {
 
     // --- POST: create or upsert prime ---
     if (req.method === 'POST') {
-      if (!isGerant(user) && !isAdmin(user)) {
+      if (!isGerant(user) && !isAdmin(user) && !isResp(user)) {
         return errorResponse('Accès refusé', 403);
       }
 

@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { Gift, Check, X, Trash2, Pencil } from 'lucide-react';
 import { t } from '@/i18n';
 import { type Prime, type PrimeStatus } from '@/types';
-import { isCoordinateur, isGerantStaff, formatShortDate } from '@/lib/utils';
+import { isCoordinateur, isGerantStaff, isPoleResponsible, formatShortDate } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth.store';
 import { useCurrentWeek } from '@/hooks/queries/use-payroll';
 import { useMembers } from '@/hooks/queries/use-members';
@@ -37,6 +37,7 @@ export default function PrimesPage() {
 
   const isCoord = role ? isCoordinateur(role) : false;
   const isGerant = role ? isGerantStaff(role) : false;
+  const isResp = role ? isPoleResponsible(role) : false;
 
   const { data: week, isLoading: weekLoading } = useCurrentWeek();
   const { data: primes, isLoading: primesLoading } = usePrimes(week?.id);
@@ -206,7 +207,7 @@ export default function PrimesPage() {
       )}
 
       {/* Submit form: gérant + coord/dev */}
-      {(isGerant || isCoord) && !weekLocked && (
+      {(isGerant || isCoord || isResp) && !weekLocked && (
         <div className="glass-elevated rounded-xl p-5">
           <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-text-secondary">
             {tr.primes.newPrime}
@@ -342,7 +343,7 @@ export default function PrimesPage() {
                               </Button>
                             </>
                           )}
-                          {(isGerant || isCoord) && !weekLocked && (
+                          {(isGerant || isCoord || isResp) && !weekLocked && (
                             <Button
                               size="sm"
                               variant="ghost"
