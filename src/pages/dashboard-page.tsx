@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { t } from '@/i18n';
 import { Pole, type PayrollSubmission } from '@/types';
 import { useAuthStore } from '@/stores/auth.store';
-import { isCoordinateur, isPoleResponsible, isGerantStaff, formatShortDate, getPoleForRole } from '@/lib/utils';
+import { isCoordinateur, isPoleResponsible, isGerantStaff, formatShortDate } from '@/lib/utils';
 import { POLE_LABELS } from '@/lib/constants';
 import { useCurrentWeek, usePayrollEntries, useOpenPayroll, useClosePayroll, useLockWeek, useExportPayroll } from '@/hooks/queries/use-payroll';
 import Button from '@/components/ui/button';
@@ -52,7 +52,6 @@ export default function DashboardPage() {
   const isCoord = user ? isCoordinateur(user.role) : false;
   const isResp = user ? isPoleResponsible(user.role) : false;
   const isGerant = user ? isGerantStaff(user.role) : false;
-  const userPole = user ? getPoleForRole(user.role) : null;
 
   const [showLockConfirm, setShowLockConfirm] = useState(false);
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
@@ -77,13 +76,7 @@ export default function DashboardPage() {
     ? `${formatShortDate(week.week_start)} ${tr.payroll.to} ${formatShortDate(week.week_end)}`
     : '—';
 
-  const visiblePoles = isCoord
-    ? ALL_POLES
-    : isGerant
-      ? [Pole.ADMINISTRATION, Pole.MODERATION, Pole.ANIMATION, Pole.MJ, Pole.DOUANE]
-      : userPole
-        ? [userPole]
-        : [];
+  const visiblePoles = ALL_POLES;
 
   async function handleOpen() {
     try {
