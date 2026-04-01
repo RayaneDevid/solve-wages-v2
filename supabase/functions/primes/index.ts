@@ -56,11 +56,12 @@ serve(async (req) => {
         const peerIds = new Set<string>([user.id]);
 
         if (isGerant(user)) {
-          // Gérants see primes from all gérants + all responsables
+          // Gérants see primes from all gérants + all responsables (excluding soft-deleted)
           const { data: peers } = await supabase
             .from('users')
             .select('id, roles')
-            .filter('is_active', 'eq', true);
+            .filter('is_active', 'eq', true)
+            .is('deleted_at', null);
 
           if (peers) {
             for (const peer of peers) {
@@ -102,7 +103,7 @@ serve(async (req) => {
       const userIds = [...new Set(primes.map((p: { submitted_by_id: string | null }) => p.submitted_by_id).filter(Boolean))];
       const usernameMap: Record<string, string> = {};
       if (userIds.length > 0) {
-        const { data: users } = await supabase.from('users').select('id, username').in('id', userIds);
+        const { data: users } = await supabase.from('users').select('id, username').in('id', userIds).is('deleted_at', null);
         if (users) { for (const u of users) { usernameMap[u.id] = u.username; } }
       }
       const enriched = primes.map((p: Record<string, unknown>) => ({

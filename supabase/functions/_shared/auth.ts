@@ -45,11 +45,12 @@ export async function getUser(req: Request): Promise<AppUser> {
     throw new HttpError('JWT invalide', 401);
   }
 
-  // Find app user by supabase_auth_id
+  // Find app user by supabase_auth_id (excluding soft-deleted users)
   const { data: appUser, error: userError } = await supabase
     .from('users')
     .select('*')
     .eq('supabase_auth_id', authUser.id)
+    .is('deleted_at', null)
     .single();
 
   if (userError) {

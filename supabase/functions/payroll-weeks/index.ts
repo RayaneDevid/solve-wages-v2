@@ -83,7 +83,8 @@ serve(async (req) => {
           const { data: submitters } = await supabase
             .from('users')
             .select('id, username')
-            .in('id', submittedByIds);
+            .in('id', submittedByIds)
+            .is('deleted_at', null);
           if (submitters) {
             for (const u of submitters) { usernameMap[u.id] = u.username; }
           }

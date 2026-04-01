@@ -44,11 +44,12 @@ serve(async (req) => {
         existingByDiscordId[e.discord_id] = { id: e.id, is_active: e.is_active };
       }
 
-      // Lookup staff_ids
+      // Lookup staff_ids (excluding soft-deleted)
       const { data: staffUsers } = await supabase
         .from('users')
         .select('id, discord_id')
-        .in('discord_id', discordIds);
+        .in('discord_id', discordIds)
+        .is('deleted_at', null);
 
       const discordToStaffId: Record<string, string> = {};
       if (staffUsers) {

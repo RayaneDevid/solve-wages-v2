@@ -40,11 +40,12 @@ serve(async (req) => {
       return errorResponse('Discord ID introuvable dans les métadonnées', 400);
     }
 
-    // 4. Look up user in our users table by discord_id
+    // 4. Look up user in our users table by discord_id (excluding soft-deleted)
     const { data: appUser, error: lookupError } = await supabase
       .from('users')
       .select('*')
       .eq('discord_id', discordId)
+      .is('deleted_at', null)
       .single();
 
     if (lookupError || !appUser) {

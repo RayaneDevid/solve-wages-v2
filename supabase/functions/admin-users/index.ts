@@ -102,11 +102,12 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     );
 
-    // GET — List all users
+    // GET — List all users (excluding soft-deleted)
     if (req.method === 'GET') {
       const { data, error } = await supabase
         .from('users')
         .select('*')
+        .is('deleted_at', null)
         .order('created_at', { ascending: true });
 
       if (error) {
@@ -268,7 +269,7 @@ serve(async (req) => {
       return jsonResponse(data);
     }
 
-    // DELETE — Delete user
+    // DELETE — Soft delete user (no CASCADE needed)
     if (req.method === 'DELETE') {
       let userId: string | null = null;
 
@@ -294,26 +295,14 @@ serve(async (req) => {
         return errorResponse('Vous ne pouvez pas vous supprimer vous-même', 403);
       }
 
-      // Get the user to check if they have a linked auth account
-      const { data: targetUser } = await supabase
+      // Soft delete: Update deleted_at timestamp instead of physical delete
+      const { error: updateError } = await supabase
         .from('users')
-        .select('supabase_auth_id')
-        .eq('id', userId)
-        .single();
-
-      // Delete from users table
-      const { error: deleteError } = await supabase
-        .from('users')
-        .delete()
+        .update({ deleted_at: new Date().toISOString() })
         .eq('id', userId);
 
-      if (deleteError) {
-        return errorResponse(deleteError.message, 500);
-      }
-
-      // Cascade: delete auth.user if linked
-      if (targetUser?.supabase_auth_id) {
-        await supabase.auth.admin.deleteUser(targetUser.supabase_auth_id);
+      if (updateError) {
+        return errorResponse(updateError.message, 500);
       }
 
       return jsonResponse({ success: true });

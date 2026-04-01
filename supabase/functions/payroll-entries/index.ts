@@ -198,7 +198,8 @@ serve(async (req) => {
       const { data: staffUsers } = await supabase
         .from('users')
         .select('id, discord_id')
-        .in('discord_id', discordIds);
+        .in('discord_id', discordIds)
+        .is('deleted_at', null);
 
       const discordToStaffId: Record<string, string> = {};
       if (staffUsers) {
