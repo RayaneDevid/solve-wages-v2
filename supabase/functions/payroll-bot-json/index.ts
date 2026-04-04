@@ -124,7 +124,7 @@ serve(async (req) => {
       'ID Discord': '231447828172374016',
       'Steam ID': '76561198102020710',
       'Nom': 'Rayane',
-      'Montant de la paie': '50000',
+      'Montant de la paie': '90000',
       'Confirmer pour envoi par le BOT': true,
       'Confirmé par Nagisa': false,
       'Pôle': 'Modération',
