@@ -314,35 +314,6 @@ export default function PayrollEntryPage() {
     );
   }
 
-  if (isBlocked) {
-    return (
-      <div className="flex flex-col gap-6">
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-text-primary">{tr.nav.payroll}</h1>
-            <p className="mt-1 text-sm text-text-secondary">{weekLabel}</p>
-          </div>
-          <WeekStatusBadge status={week.status} className="px-3 py-1 text-sm" />
-        </div>
-        {availablePoles.length > 1 && (
-          <div className="w-[200px]">
-            <Select
-              value={selectedPole}
-              onChange={(e) => setSelectedPole(e.target.value as Pole)}
-              options={poleOptions}
-              placeholder={tr.payroll.selectPole}
-            />
-          </div>
-        )}
-        <div className="flex h-48 flex-col items-center justify-center gap-3">
-          <Lock className="h-8 w-8 text-text-tertiary" />
-          <p className="text-sm font-medium text-text-primary">Saisie en cours par <span className="text-accent">{lockedBy}</span></p>
-          <p className="text-xs text-text-tertiary">Cette page se débloquera automatiquement dès qu'il aura terminé.</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-start justify-between">
@@ -352,12 +323,6 @@ export default function PayrollEntryPage() {
         </div>
         <WeekStatusBadge status={week.status} className="px-3 py-1 text-sm" />
       </div>
-
-      {weekStatus === 'locked' && (
-        <div className="glass-card rounded-xl p-4 text-center text-sm text-text-tertiary">
-          {tr.payroll.lockedMessage}
-        </div>
-      )}
 
       <div className="flex flex-wrap items-center gap-3">
         {availablePoles.length > 1 && (
@@ -370,12 +335,12 @@ export default function PayrollEntryPage() {
             />
           </div>
         )}
-        {currentSubmission?.submitted_by_username && (
+        {!isBlocked && currentSubmission?.submitted_by_username && (
           <span className="text-xs text-text-tertiary">
             {tr.global.submittedBy} <span className="font-medium text-text-secondary">{currentSubmission.submitted_by_username}</span>
           </span>
         )}
-        {editable && (
+        {!isBlocked && editable && (
           <div className="ml-auto flex items-center gap-2">
             {inactiveCount > 0 && (
               <Button size="sm" variant="ghost" onClick={handleMarkAllActive}>
@@ -414,23 +379,37 @@ export default function PayrollEntryPage() {
         )}
       </div>
 
-      {entriesLoading ? (
-        <div className="flex h-32 items-center justify-center">
-          <Spinner />
+      {isBlocked ? (
+        <div className="flex h-48 flex-col items-center justify-center gap-3">
+          <Lock className="h-8 w-8 text-text-tertiary" />
+          <p className="text-sm font-medium text-text-primary">Saisie en cours par <span className="text-accent">{lockedBy}</span></p>
+          <p className="text-xs text-text-tertiary">Cette page se débloquera automatiquement dès qu'il aura terminé.</p>
         </div>
       ) : (
-        <PayrollTable
-          entries={localEntries}
-          pole={selectedPole}
-          editable={editable}
-          weekStatus={weekStatus}
-          weekStart={week.week_start}
-          weekEnd={week.week_end}
-          onUpdate={handleUpdate}
-          onDelete={handleDelete}
-        />
+        <>
+          {weekStatus === 'locked' && (
+            <div className="glass-card rounded-xl p-4 text-center text-sm text-text-tertiary">
+              {tr.payroll.lockedMessage}
+            </div>
+          )}
+          {entriesLoading ? (
+            <div className="flex h-32 items-center justify-center">
+              <Spinner />
+            </div>
+          ) : (
+            <PayrollTable
+              entries={localEntries}
+              pole={selectedPole}
+              editable={editable}
+              weekStatus={weekStatus}
+              weekStart={week.week_start}
+              weekEnd={week.week_end}
+              onUpdate={handleUpdate}
+              onDelete={handleDelete}
+            />
+          )}
+        </>
       )}
-
     </div>
   );
 }
