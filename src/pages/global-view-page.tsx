@@ -15,7 +15,7 @@ import {
 } from '@/hooks/queries/use-payroll';
 import { usePrimes } from '@/hooks/queries/use-primes';
 import Button from '@/components/ui/button';
-import Select from '@/components/ui/select';
+import SearchableSelect from '@/components/ui/searchable-select';
 import Spinner from '@/components/ui/spinner';
 import Modal from '@/components/ui/modal';
 import Input from '@/components/ui/input';
@@ -129,31 +129,34 @@ export default function GlobalViewPage() {
 
   const polesToShow = filterPole === 'all' ? ALL_POLES : [filterPole as Pole];
 
-  const approvedPrimesMap = useMemo(() => {
-    const map = new Map<string, number>();
-    if (!primesData) return map;
-    for (const p of primesData) {
-      if (p.status === 'approved') {
-        map.set(p.discord_id, (map.get(p.discord_id) ?? 0) + p.amount);
+  // Assign each user's primes to their primary pole (first in ALL_POLES order where they have an entry)
+  // This prevents a user appearing in multiple poles from having their prime counted/displayed twice.
+  const perPolePrimesMap = useMemo(() => {
+    const primaryPole = new Map<string, Pole>();
+    for (const pole of ALL_POLES) {
+      for (const entry of entries) {
+        if (entry.pole === pole && !primaryPole.has(entry.discord_id)) {
+          primaryPole.set(entry.discord_id, pole);
+        }
       }
     }
-    return map;
-  }, [primesData]);
+    const result = new Map<Pole, Map<string, number>>();
+    for (const p of (primesData ?? [])) {
+      if (p.status !== 'approved') continue;
+      const pole = primaryPole.get(p.discord_id);
+      if (!pole) continue;
+      if (!result.has(pole)) result.set(pole, new Map());
+      const m = result.get(pole)!;
+      m.set(p.discord_id, (m.get(p.discord_id) ?? 0) + p.amount);
+    }
+    return result;
+  }, [entries, primesData]);
 
-  const approvedPrimesList = useMemo(
-    () => primesData?.filter((p) => p.status === 'approved') ?? [],
-    [primesData],
-  );
-
-  const poleSummaries = (() => {
-    const countedDiscordIds = new Set<string>();
+  const poleSummaries = useMemo(() => {
     return ALL_POLES.map((pole) => {
       const poleEntries = entries.filter((e) => e.pole === pole);
-      const poleDiscordIds = new Set(poleEntries.map((e) => e.discord_id));
-      const primesTotal = approvedPrimesList
-        .filter((p) => poleDiscordIds.has(p.discord_id) && !countedDiscordIds.has(p.discord_id))
-        .reduce((sum, p) => sum + p.amount, 0);
-      poleDiscordIds.forEach((id) => countedDiscordIds.add(id));
+      const poleMap = perPolePrimesMap.get(pole) ?? new Map<string, number>();
+      const primesTotal = [...poleMap.values()].reduce((sum, v) => sum + v, 0);
       return {
         pole,
         total: poleEntries.reduce((sum, e) => sum + e.montant, 0) + primesTotal,
@@ -161,7 +164,7 @@ export default function GlobalViewPage() {
         count: poleEntries.length,
       };
     }).filter((ps) => ps.count > 0);
-  })();
+  }, [entries, perPolePrimesMap]);
 
   const poleFilterOptions = [
     { value: 'all', label: tr.global.allPoles },
@@ -312,10 +315,11 @@ export default function GlobalViewPage() {
 
       <div className="flex items-center gap-3">
         <div className="w-[220px]">
-          <Select
+          <SearchableSelect
             value={filterPole}
-            onChange={(e) => setFilterPole(e.target.value)}
+            onChange={(value) => setFilterPole(value)}
             options={poleFilterOptions}
+            clearable={false}
           />
         </div>
         <WeekStatusBadge status={week.status} />
@@ -329,8 +333,8 @@ export default function GlobalViewPage() {
         <div className="flex flex-col gap-8">
           {polesToShow.map((pole) => {
             const poleEntries = entries.filter((e) => e.pole === pole);
-            const poleDiscordIds = new Set(poleEntries.map((e) => e.discord_id));
-            const polePrimes = approvedPrimesList.filter((p) => poleDiscordIds.has(p.discord_id));
+            const polePrimesMap = perPolePrimesMap.get(pole) ?? new Map<string, number>();
+            const polePrimesTotal = [...polePrimesMap.values()].reduce((s, v) => s + v, 0);
             const poleUnconfirmedCount = poleEntries.filter((e) => e.id && !e.confirmed_by_coordinator).length;
             return (
               <div key={pole}>
@@ -345,10 +349,10 @@ export default function GlobalViewPage() {
                   <span className="text-xs text-text-tertiary">
                     {poleEntries.length} staffs
                   </span>
-                  {polePrimes.length > 0 && (
+                  {polePrimesTotal > 0 && (
                     <span className="flex items-center gap-1 text-xs text-accent">
                       <Gift className="h-3.5 w-3.5" />
-                      {polePrimes.reduce((s, p) => s + p.amount, 0).toLocaleString('fr-FR')} {tr.common.credits}
+                      {polePrimesTotal.toLocaleString('fr-FR')} {tr.common.credits}
                     </span>
                   )}
                   {isCoord && poleUnconfirmedCount > 0 && (
@@ -371,7 +375,7 @@ export default function GlobalViewPage() {
                   weekStart={week.week_start}
                   weekEnd={week.week_end}
                   isCoordinator={isCoord}
-                  primesByDiscordId={approvedPrimesMap}
+                  primesByDiscordId={polePrimesMap}
                   onUpdate={() => {}}
                   onDelete={() => {}}
                   onConfirm={handleConfirm}
