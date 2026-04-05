@@ -7,7 +7,7 @@ import { isCoordinateur, isGerantStaff, getPoleForRole, isPoleResponsible } from
 import { POLE_LABELS, GRADES_BY_POLE, getGradeColor, compareByGradeThenName, GRADE_TO_ROLE, ROLE_HIERARCHY, RESP_PAYROLL_POLE } from '@/lib/constants';
 import { useMembers, useAddMember, useUpdateMember, useDeleteMember, useBulkImport } from '@/hooks/queries/use-members';
 import Button from '@/components/ui/button';
-import Select from '@/components/ui/select';
+import SearchableSelect from '@/components/ui/searchable-select';
 import Spinner from '@/components/ui/spinner';
 import Badge from '@/components/ui/badge';
 import { Table, TableHeader, TableBody, TableRow, TableCell } from '@/components/ui/table';
@@ -401,10 +401,11 @@ export default function MembersPage() {
       <div className="flex flex-wrap items-center gap-3">
         {poleOptions.length > 1 && (
           <div className="w-[220px]">
-            <Select
+            <SearchableSelect
               value={selectedPole}
-              onChange={(e) => setSelectedPole(e.target.value)}
+              onChange={(value) => setSelectedPole(value)}
               options={poleOptions}
+              clearable={false}
             />
           </div>
         )}

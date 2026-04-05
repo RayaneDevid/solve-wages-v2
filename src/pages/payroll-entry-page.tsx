@@ -8,7 +8,7 @@ import { isCoordinateur, isPoleResponsible, getPoleForRole, formatShortDate } fr
 import { POLE_LABELS, RESP_PAYROLL_POLE } from '@/lib/constants';
 import { useCurrentWeek, usePayrollEntries, useSaveEntries, useSubmitPayroll, useDeleteEntry } from '@/hooks/queries/use-payroll';
 import Button from '@/components/ui/button';
-import Select from '@/components/ui/select';
+import SearchableSelect from '@/components/ui/searchable-select';
 import Spinner from '@/components/ui/spinner';
 import WeekStatusBadge from '@/components/payroll/week-status-badge';
 import PayrollTable, { type LocalPayrollEntry } from '@/components/payroll/payroll-table';
@@ -327,11 +327,12 @@ export default function PayrollEntryPage() {
       <div className="flex flex-wrap items-center gap-3">
         {availablePoles.length > 1 && (
           <div className="w-[200px]">
-            <Select
+            <SearchableSelect
               value={selectedPole}
-              onChange={(e) => setSelectedPole(e.target.value as Pole)}
+              onChange={(value) => setSelectedPole(value as Pole)}
               options={poleOptions}
               placeholder={tr.payroll.selectPole}
+              clearable={false}
             />
           </div>
         )}

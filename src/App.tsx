@@ -136,10 +136,16 @@ function AppRoutes() {
         </Route>
       </Route>
 
-      {/* Global view + Admin: coordinateur only */}
-      <Route element={<ProtectedRoute allowedRoles={[Role.DEVELOPPEUR, Role.COORDINATEUR]} />}>
+      {/* Global view: coordinateur + gerant_rp */}
+      <Route element={<ProtectedRoute allowedRoles={[Role.DEVELOPPEUR, Role.COORDINATEUR, Role.GERANT_RP]} />}>
         <Route element={<Layout />}>
           <Route path="/global" element={<GlobalViewPage />} />
+        </Route>
+      </Route>
+
+      {/* Admin: coordinateur only */}
+      <Route element={<ProtectedRoute allowedRoles={[Role.DEVELOPPEUR, Role.COORDINATEUR]} />}>
+        <Route element={<Layout />}>
           <Route path="/admin" element={<AdminPage />} />
         </Route>
       </Route>

@@ -14,6 +14,7 @@ interface SearchableSelectProps {
   placeholder?: string;
   label?: string;
   disabled?: boolean;
+  clearable?: boolean;
 }
 
 export default function SearchableSelect({
@@ -23,6 +24,7 @@ export default function SearchableSelect({
   placeholder = 'Sélectionner...',
   label,
   disabled,
+  clearable = true,
 }: SearchableSelectProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -83,7 +85,7 @@ export default function SearchableSelect({
             {selected ? selected.label : placeholder}
           </span>
           <div className="flex shrink-0 items-center gap-1">
-            {value && (
+            {clearable && value && (
               <span
                 onClick={handleClear}
                 className="rounded p-0.5 text-text-tertiary hover:text-text-primary cursor-pointer"

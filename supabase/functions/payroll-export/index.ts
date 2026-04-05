@@ -84,7 +84,7 @@ serve(async (req) => {
 
     const user = await getUser(req);
 
-    if (!isAdmin(user)) {
+    if (!isAdmin(user) && !user.roles.includes('gerant_rp')) {
       return errorResponse('Accès refusé', 403);
     }
 

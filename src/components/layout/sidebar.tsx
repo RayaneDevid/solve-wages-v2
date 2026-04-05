@@ -64,7 +64,7 @@ export default function Sidebar() {
       to: '/global',
       label: tr.nav.globalView,
       icon: <Globe className="h-[18px] w-[18px]" />,
-      visible: isCoordinateur(role),
+      visible: isCoordinateur(role) || role === Role.GERANT_RP,
     },
     {
       to: '/history',
