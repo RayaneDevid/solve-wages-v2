@@ -145,19 +145,23 @@ export default function GlobalViewPage() {
     [primesData],
   );
 
-  const poleSummaries = ALL_POLES.map((pole) => {
-    const poleEntries = entries.filter((e) => e.pole === pole);
-    const poleDiscordIds = new Set(poleEntries.map((e) => e.discord_id));
-    const primesTotal = approvedPrimesList
-      .filter((p) => poleDiscordIds.has(p.discord_id))
-      .reduce((sum, p) => sum + p.amount, 0);
-    return {
-      pole,
-      total: poleEntries.reduce((sum, e) => sum + e.montant, 0) + primesTotal,
-      primesTotal,
-      count: poleEntries.length,
-    };
-  }).filter((ps) => ps.count > 0);
+  const poleSummaries = (() => {
+    const countedDiscordIds = new Set<string>();
+    return ALL_POLES.map((pole) => {
+      const poleEntries = entries.filter((e) => e.pole === pole);
+      const poleDiscordIds = new Set(poleEntries.map((e) => e.discord_id));
+      const primesTotal = approvedPrimesList
+        .filter((p) => poleDiscordIds.has(p.discord_id) && !countedDiscordIds.has(p.discord_id))
+        .reduce((sum, p) => sum + p.amount, 0);
+      poleDiscordIds.forEach((id) => countedDiscordIds.add(id));
+      return {
+        pole,
+        total: poleEntries.reduce((sum, e) => sum + e.montant, 0) + primesTotal,
+        primesTotal,
+        count: poleEntries.length,
+      };
+    }).filter((ps) => ps.count > 0);
+  })();
 
   const poleFilterOptions = [
     { value: 'all', label: tr.global.allPoles },
