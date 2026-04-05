@@ -1,4 +1,5 @@
 import { useEffect, useRef, useCallback, useId } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -41,7 +42,7 @@ export default function Modal({ isOpen, onClose, title, children, className }: M
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div
       ref={overlayRef}
       role="dialog"
@@ -68,6 +69,7 @@ export default function Modal({ isOpen, onClose, title, children, className }: M
         </div>
         <div className="p-6">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
