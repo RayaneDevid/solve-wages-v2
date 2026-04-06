@@ -119,13 +119,13 @@ serve(async (req) => {
       'Grade': entry.grade,
     }));
 
-    // Dev only: add a fake entry to test the bot without going through the frontend/
+    // Dev only: add a fake entry to test the bot without going through the frontend/ Don't push to production.
     botJson.push({
       'ID Discord': '231447828172374016',
       'Steam ID': '76561198102020710',
       'Nom': 'Rayane',
       'Montant de la paie': '90000',
-      'Confirmer pour envoi par le BOT': true,
+      'Confirmer pour envoi par le BOT': false,
       'Confirmé par Nagisa': false,
       'Pôle': 'Modération',
       'Grade': 'Développeur',
