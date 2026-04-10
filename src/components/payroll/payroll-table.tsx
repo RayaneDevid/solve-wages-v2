@@ -43,7 +43,7 @@ export default function PayrollTable({
 }: PayrollTableProps) {
   const tr = t();
   const counters = getPoleCounterFields(pole);
-  const showTotal = pole === Pole.MODERATION;
+  const showTotal = pole === Pole.MODERATION || pole === Pole.MJ;
   const canDeleteOrAdd = editable && weekStatus !== 'locked';
 
   const sortedEntries = useMemo(
@@ -88,7 +88,7 @@ export default function PayrollTable({
             ))}
             {showTotal && (
               <th className="px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-text-secondary">
-                {tr.common.total}
+                {pole === Pole.MJ ? tr.payroll.fields.nbAnimationsMj : tr.common.total}
               </th>
             )}
             <th className="px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-text-secondary">

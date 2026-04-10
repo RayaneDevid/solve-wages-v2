@@ -28,6 +28,9 @@ function toLocalEntry(entry: PayrollEntry): LocalPayrollEntry {
     bda_count: entry.bda_count,
     nb_animations: entry.nb_animations,
     nb_animations_mj: entry.nb_animations_mj,
+    nb_animations_mj_p: entry.nb_animations_mj_p,
+    nb_animations_mj_m: entry.nb_animations_mj_m,
+    nb_animations_mj_g: entry.nb_animations_mj_g,
     nb_candidatures_ecrites: entry.nb_candidatures_ecrites,
     nb_oraux: entry.nb_oraux,
     commentaire: entry.commentaire,
@@ -127,6 +130,9 @@ export default function PayrollEntryPage() {
             bda_count: e.bda_count,
             nb_animations: e.nb_animations,
             nb_animations_mj: e.nb_animations_mj,
+            nb_animations_mj_p: e.nb_animations_mj_p,
+            nb_animations_mj_m: e.nb_animations_mj_m,
+            nb_animations_mj_g: e.nb_animations_mj_g,
             nb_candidatures_ecrites: e.nb_candidatures_ecrites,
             nb_oraux: e.nb_oraux,
             commentaire: e.commentaire,
@@ -155,15 +161,24 @@ export default function PayrollEntryPage() {
     }
   }
 
+  const MJ_SUB_FIELDS = ['nb_animations_mj_p', 'nb_animations_mj_m', 'nb_animations_mj_g'] as const;
+
   const handleUpdate = useCallback((discordId: string, field: string, value: string | number | boolean) => {
     setLocalEntries((prev) =>
-      prev.map((e) =>
-        e.discord_id === discordId
-          ? { ...e, [field]: value, _dirty: true }
-          : e,
-      ),
+      prev.map((e) => {
+        if (e.discord_id !== discordId) return e;
+        const updated = { ...e, [field]: value, _dirty: true };
+        if (MJ_SUB_FIELDS.includes(field as typeof MJ_SUB_FIELDS[number])) {
+          updated.nb_animations_mj =
+            (field === 'nb_animations_mj_p' ? (value as number) : (updated.nb_animations_mj_p ?? 0)) +
+            (field === 'nb_animations_mj_m' ? (value as number) : (updated.nb_animations_mj_m ?? 0)) +
+            (field === 'nb_animations_mj_g' ? (value as number) : (updated.nb_animations_mj_g ?? 0));
+        }
+        return updated;
+      }),
     );
     setHasLocalChanges(true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const zeroActiveCount = localEntries.filter((e) => e.montant === 0 && !e.is_inactive).length;

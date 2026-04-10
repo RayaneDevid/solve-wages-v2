@@ -160,7 +160,9 @@ export default function PayrollRow({
 
       {showTotal && (
         <td className="px-3 py-2.5 text-center text-sm font-medium text-text-primary">
-          {(entry.tickets_ig ?? 0) + (entry.tickets_discord ?? 0) + (entry.bda_count ?? 0)}
+          {pole === 'mj'
+            ? (entry.nb_animations_mj_p ?? 0) + (entry.nb_animations_mj_m ?? 0) + (entry.nb_animations_mj_g ?? 0)
+            : (entry.tickets_ig ?? 0) + (entry.tickets_discord ?? 0) + (entry.bda_count ?? 0)}
         </td>
       )}
 

@@ -145,6 +145,9 @@ export interface PayrollEntry {
   bda_count: number | null;
   nb_animations: number | null;
   nb_animations_mj: number | null;
+  nb_animations_mj_p: number | null;
+  nb_animations_mj_m: number | null;
+  nb_animations_mj_g: number | null;
   nb_candidatures_ecrites: number | null;
   nb_oraux: number | null;
   commentaire: string | null;

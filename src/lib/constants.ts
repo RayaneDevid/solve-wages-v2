@@ -412,7 +412,11 @@ const POLE_COUNTER_FIELDS: Partial<Record<Pole, { field: string; label: string }
     { field: 'bda_count', label: 'bdaCount' },
   ],
   animation: [{ field: 'nb_animations', label: 'nbAnimations' }],
-  mj: [{ field: 'nb_animations_mj', label: 'nbAnimationsMj' }],
+  mj: [
+    { field: 'nb_animations_mj_p', label: 'nbAnimationsMjP' },
+    { field: 'nb_animations_mj_m', label: 'nbAnimationsMjM' },
+    { field: 'nb_animations_mj_g', label: 'nbAnimationsMjG' },
+  ],
   douane: [
     { field: 'nb_candidatures_ecrites', label: 'nbCandidaturesEcrites' },
     { field: 'nb_oraux', label: 'nbOraux' },
