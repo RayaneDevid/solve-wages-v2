@@ -75,8 +75,8 @@ export default function PayrollTable({
               {fieldLabels.grade}
             </th>
             {counters.map((c) => (
-              <th key={c.field} className="px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-text-secondary">
-                <div className="flex flex-col">
+              <th key={c.field} className="px-3 py-3 text-center text-[11px] font-semibold uppercase tracking-wider text-text-secondary">
+                <div className="flex flex-col items-center">
                   <span>{fieldLabels[c.label as keyof typeof fieldLabels]}</span>
                   {dateRange && (
                     <span className="mt-0.5 text-[9px] font-normal normal-case tracking-normal text-text-tertiary">

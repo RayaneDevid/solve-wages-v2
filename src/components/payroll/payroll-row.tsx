@@ -148,7 +148,7 @@ export default function PayrollRow({
       </td>
 
       {counters.map((c) => (
-        <td key={c.field} className="px-3 py-2.5 text-sm">
+        <td key={c.field} className="px-3 py-2.5 text-center text-sm">
           <InlineInput
             type="number"
             value={getNumericField(entry, c.field)}
