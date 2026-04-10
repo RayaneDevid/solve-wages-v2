@@ -270,6 +270,15 @@ export default function MembersPage() {
     ...availablePoles.map((p) => ({ value: p, label: POLE_LABELS[p] })),
   ];
 
+  const poleCounts = useMemo(() => {
+    if (!rawMembers) return new Map<string, number>();
+    const map = new Map<string, number>();
+    for (const m of rawMembers) {
+      map.set(m.pole, (map.get(m.pole) ?? 0) + 1);
+    }
+    return map;
+  }, [rawMembers]);
+
   const grades = activePole ? (GRADES_BY_POLE[activePole] ?? []) : [];
 
   const handleAddMember = useCallback(async (data: { pole?: string; discord_username: string; discord_id: string; steam_id: string; grade: string }) => {
@@ -422,6 +431,29 @@ export default function MembersPage() {
           </div>
         )}
       </div>
+
+      {/* Pole stats */}
+      {rawMembers && rawMembers.length > 0 && (
+        isAllView ? (
+          <div className="flex flex-wrap gap-2">
+            {availablePoles.map((p) => {
+              const count = poleCounts.get(p);
+              if (!count) return null;
+              return (
+                <div key={p} className="glass-card flex items-center gap-2 rounded-lg px-3 py-1.5">
+                  <span className="text-xs text-text-secondary">{POLE_LABELS[p]}</span>
+                  <span className="text-sm font-semibold text-text-primary">{count}</span>
+                  <span className="text-xs text-text-tertiary">{count > 1 ? tr.members.members_plural : tr.members.member}</span>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="text-sm text-text-secondary">
+            {rawMembers.length}&nbsp;{rawMembers.length > 1 ? tr.members.members_plural : tr.members.member}
+          </p>
+        )
+      )}
 
       {/* Table */}
       {isAllView ? (

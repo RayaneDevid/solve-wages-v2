@@ -234,6 +234,8 @@ const fr = {
     addMember: 'Ajouter un membre',
     bulkImport: 'Import CSV',
     noMembers: 'Aucun membre dans ce pôle.',
+    member: 'membre',
+    members_plural: 'membres',
     fields: {
       avatar: 'Avatar',
       discordUsername: 'Nom Discord',
