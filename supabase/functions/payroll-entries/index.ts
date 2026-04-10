@@ -70,13 +70,19 @@ serve(async (req) => {
           return errorResponse(membersError.message, 500);
         }
 
+          // Build probation map from pole_members
+        const probMap = new Map<string, { is_probatoire: boolean; probatoire_since: string | null }>();
+        for (const m of (poleMembers ?? []) as Array<{ discord_id: string; is_probatoire: boolean; probatoire_since: string | null }>) {
+          probMap.set(m.discord_id, { is_probatoire: m.is_probatoire ?? false, probatoire_since: m.probatoire_since ?? null });
+        }
+
         const existingDiscordIds = new Set(
           (entries ?? []).map((e: { discord_id: string }) => e.discord_id),
         );
 
         const prefilled = (poleMembers ?? [])
           .filter((m: { discord_id: string }) => !existingDiscordIds.has(m.discord_id))
-          .map((m: { staff_id: string | null; discord_username: string; discord_id: string; steam_id: string | null; grade: string }) => ({
+          .map((m: { staff_id: string | null; discord_username: string; discord_id: string; steam_id: string | null; grade: string; is_probatoire: boolean; probatoire_since: string | null }) => ({
             id: null,
             payroll_week_id: weekId,
             submission_id: null,
@@ -107,14 +113,41 @@ serve(async (req) => {
             created_at: null,
             updated_at: null,
             is_prefilled: true,
+            is_probatoire: m.is_probatoire ?? false,
+            probatoire_since: m.probatoire_since ?? null,
           }));
 
         const allEntries = [
-          ...(entries ?? []).map((e: Record<string, unknown>) => ({ ...e, is_prefilled: false })),
+          ...(entries ?? []).map((e: Record<string, unknown>) => ({
+            ...e,
+            is_prefilled: false,
+            ...(probMap.get(e.discord_id as string) ?? { is_probatoire: false, probatoire_since: null }),
+          })),
           ...prefilled,
         ];
 
         return jsonResponse(allEntries);
+      }
+
+      // No targetPole: enrich entries with probation status from pole_members
+      if (entries && entries.length > 0) {
+        const discordIds = [...new Set((entries as Array<{ discord_id: string }>).map((e) => e.discord_id))];
+        const { data: membersProb } = await supabase
+          .from('pole_members')
+          .select('discord_id, pole, is_probatoire, probatoire_since')
+          .in('discord_id', discordIds)
+          .eq('is_active', true);
+
+        const globalProbMap = new Map<string, { is_probatoire: boolean; probatoire_since: string | null }>();
+        for (const m of (membersProb ?? []) as Array<{ discord_id: string; pole: string; is_probatoire: boolean; probatoire_since: string | null }>) {
+          globalProbMap.set(`${m.discord_id}:${m.pole}`, { is_probatoire: m.is_probatoire ?? false, probatoire_since: m.probatoire_since ?? null });
+        }
+
+        const enriched = (entries as Array<Record<string, unknown>>).map((e) => ({
+          ...e,
+          ...(globalProbMap.get(`${e.discord_id}:${e.pole}`) ?? { is_probatoire: false, probatoire_since: null }),
+        }));
+        return jsonResponse(enriched);
       }
 
       return jsonResponse(entries ?? []);

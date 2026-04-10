@@ -41,6 +41,8 @@ function toLocalEntry(entry: PayrollEntry): LocalPayrollEntry {
     presence_reunion: entry.presence_reunion,
     montant: entry.montant,
     is_inactive: entry.is_inactive,
+    is_probatoire: entry.is_probatoire ?? false,
+    probatoire_since: entry.probatoire_since ?? null,
     confirmed_by_coordinator: entry.confirmed_by_coordinator,
     confirmed_at: entry.confirmed_at,
     modified_by_coordinator: entry.modified_by_coordinator,

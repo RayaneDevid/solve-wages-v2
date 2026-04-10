@@ -245,7 +245,7 @@ serve(async (req) => {
 
     // --- PUT ---
     if (req.method === 'PUT') {
-      const { member_id, discord_username, steam_id, grade, is_active } = await req.json();
+      const { member_id, discord_username, steam_id, grade, is_active, is_probatoire, probatoire_since } = await req.json();
 
       if (!member_id) {
         return errorResponse('member_id est requis', 400);
@@ -275,6 +275,8 @@ serve(async (req) => {
       if (steam_id !== undefined) updates.steam_id = steam_id;
       if (grade !== undefined) updates.grade = grade;
       if (is_active !== undefined) updates.is_active = is_active;
+      if (is_probatoire !== undefined) updates.is_probatoire = is_probatoire;
+      if (probatoire_since !== undefined) updates.probatoire_since = probatoire_since;
 
       if (Object.keys(updates).length === 0) {
         return errorResponse('Aucun champ à mettre à jour', 400);

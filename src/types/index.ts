@@ -101,6 +101,8 @@ export interface PoleMember {
   staff_id: string | null;
   added_by_id: string;
   is_active: boolean;
+  is_probatoire: boolean;
+  probatoire_since: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -154,6 +156,8 @@ export interface PayrollEntry {
   presence_reunion: boolean;
   montant: number;
   is_inactive: boolean;
+  is_probatoire?: boolean;
+  probatoire_since?: string | null;
   confirmed_by_coordinator: boolean;
   confirmed_at: string | null;
   modified_by_coordinator: boolean;

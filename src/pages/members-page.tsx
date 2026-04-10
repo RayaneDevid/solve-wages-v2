@@ -3,7 +3,7 @@ import { Plus, Upload, UserX, Check, X } from 'lucide-react';
 import { t } from '@/i18n';
 import { Role, Pole, type PoleMember } from '@/types';
 import { useAuthStore } from '@/stores/auth.store';
-import { isCoordinateur, isGerantStaff, getPoleForRole, isPoleResponsible } from '@/lib/utils';
+import { isCoordinateur, isGerantStaff, getPoleForRole, isPoleResponsible, formatDate } from '@/lib/utils';
 import { POLE_LABELS, GRADES_BY_POLE, getGradeColor, compareByGradeThenName, GRADE_TO_ROLE, ROLE_HIERARCHY, RESP_PAYROLL_POLE } from '@/lib/constants';
 import { useMembers, useAddMember, useUpdateMember, useDeleteMember, useBulkImport } from '@/hooks/queries/use-members';
 import Button from '@/components/ui/button';
@@ -77,6 +77,79 @@ function MergedGradeBadge({ entry, gradeOptions, onChangeGrade, onDeactivate }: 
         </button>
       )}
     </span>
+  );
+}
+
+function ProbationCell({
+  member,
+  canManage,
+  onUpdate,
+}: {
+  member: PoleMember;
+  canManage: boolean;
+  onUpdate: (isProb: boolean, since: string | null) => void;
+}) {
+  const tr = t();
+  const [showInput, setShowInput] = useState(false);
+  const [dateDraft, setDateDraft] = useState('');
+
+  if (member.is_probatoire) {
+    return (
+      <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-warning/10 px-2.5 py-0.5 text-xs font-medium text-warning">
+        {tr.members.fields.probatoire}
+        {member.probatoire_since && (
+          <span className="font-normal opacity-75">
+            {tr.members.fields.probatoire_since} {formatDate(member.probatoire_since)}
+          </span>
+        )}
+        {canManage && (
+          <button
+            onClick={() => onUpdate(false, null)}
+            className="ml-0.5 rounded-full p-0.5 hover:bg-black/20"
+            title="Retirer la probation"
+          >
+            <X className="h-3 w-3" />
+          </button>
+        )}
+      </span>
+    );
+  }
+
+  if (showInput) {
+    return (
+      <div className="flex items-center gap-1">
+        <input
+          type="date"
+          value={dateDraft}
+          onChange={(e) => setDateDraft(e.target.value)}
+          className="h-7 rounded border border-border-secondary bg-white/[0.05] px-1.5 text-xs text-text-primary focus:border-accent/40 focus:outline-none"
+          autoFocus
+        />
+        <button
+          onClick={() => { onUpdate(true, dateDraft || null); setShowInput(false); }}
+          className="rounded p-0.5 text-success hover:bg-success/10"
+        >
+          <Check className="h-3.5 w-3.5" />
+        </button>
+        <button
+          onClick={() => { setDateDraft(''); setShowInput(false); }}
+          className="rounded p-0.5 text-text-tertiary hover:bg-white/[0.05]"
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
+      </div>
+    );
+  }
+
+  if (!canManage) return <span className="text-xs text-text-tertiary">—</span>;
+
+  return (
+    <button
+      onClick={() => { setDateDraft(''); setShowInput(true); }}
+      className="rounded px-2 py-0.5 text-xs text-text-tertiary transition-colors hover:bg-white/[0.05] hover:text-text-secondary"
+    >
+      {tr.members.fields.markProbatoire}
+    </button>
   );
 }
 
@@ -371,6 +444,15 @@ export default function MembersPage() {
     }
   }, [updateMember, tr]);
 
+  const handleUpdateProbation = useCallback(async (memberId: string, isProb: boolean, since: string | null) => {
+    try {
+      await updateMember.mutateAsync({ member_id: memberId, is_probatoire: isProb, probatoire_since: since });
+      showToast(tr.members.toast.probationUpdated);
+    } catch {
+      showToast(tr.members.toast.errorProbation, 'error');
+    }
+  }, [updateMember, tr]);
+
   const handleDeactivate = useCallback(async () => {
     if (!deactivateTarget) return;
     try {
@@ -491,13 +573,22 @@ export default function MembersPage() {
                       {merged.entries.map((entry) => {
                         const entryGrades = GRADES_BY_POLE[entry.pole as Pole] ?? [];
                         return (
-                          <MergedGradeBadge
-                            key={entry.id}
-                            entry={entry}
-                            gradeOptions={entryGrades}
-                            onChangeGrade={(v) => handleUpdateField(entry.id, 'grade', v)}
-                            onDeactivate={() => setDeactivateTarget(entry)}
-                          />
+                          <div key={entry.id} className="flex flex-col gap-0.5">
+                            <MergedGradeBadge
+                              entry={entry}
+                              gradeOptions={entryGrades}
+                              onChangeGrade={(v) => handleUpdateField(entry.id, 'grade', v)}
+                              onDeactivate={() => setDeactivateTarget(entry)}
+                            />
+                            {entry.is_probatoire && (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-warning/10 px-2 py-0.5 text-[10px] font-medium text-warning">
+                                {tr.members.fields.probatoire}
+                                {entry.probatoire_since && (
+                                  <span className="font-normal opacity-75">{formatDate(entry.probatoire_since)}</span>
+                                )}
+                              </span>
+                            )}
+                          </div>
                         );
                       })}
                     </div>
@@ -528,6 +619,7 @@ export default function MembersPage() {
                 <TableCell header>{tr.members.fields.steamId}</TableCell>
                 <TableCell header>{tr.members.fields.grade}</TableCell>
                 <TableCell header>{tr.members.fields.status}</TableCell>
+                <TableCell header>{tr.members.fields.probatoire}</TableCell>
                 <TableCell header>{tr.members.fields.actions}</TableCell>
               </tr>
             </TableHeader>
@@ -573,6 +665,13 @@ export default function MembersPage() {
                       <Badge variant={member.is_active ? 'success' : 'default'}>
                         {member.is_active ? tr.members.fields.active : tr.members.fields.inactive}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <ProbationCell
+                        member={member}
+                        canManage={canManage}
+                        onUpdate={(isProb, since) => handleUpdateProbation(member.id, isProb, since)}
+                      />
                     </TableCell>
                     <TableCell>
                       {member.is_active && (

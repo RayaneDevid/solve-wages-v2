@@ -28,6 +28,8 @@ export async function updateMember(payload: {
   steam_id?: string;
   grade?: string;
   is_active?: boolean;
+  is_probatoire?: boolean;
+  probatoire_since?: string | null;
 }): Promise<PoleMember> {
   const { data } = await apiClient.put<PoleMember>('/pole-members', payload);
   return data;

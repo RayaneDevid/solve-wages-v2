@@ -95,7 +95,8 @@ export default function PayrollRow({
   const counters = getPoleCounterFields(pole);
   const [commentModalOpen, setCommentModalOpen] = useState(false);
   const [commentDraft, setCommentDraft] = useState('');
-  const canEditPayFields = editable && weekStatus === 'open' && !entry.is_inactive;
+  const isProbatoire = entry.is_probatoire ?? false;
+  const canEditPayFields = editable && weekStatus === 'open' && !entry.is_inactive && !isProbatoire;
   const canDeleteOrAdd = editable && weekStatus !== 'locked';
   const isNew = entry._isNew;
   const isCoordModified = entry.modified_by_coordinator;
@@ -106,6 +107,7 @@ export default function PayrollRow({
         'transition-colors duration-150 hover:bg-white/[0.02]',
         isNew && 'border-l-2 border-l-accent/60',
         isCoordModified && !isNew && 'border-l-2 border-l-accent-purple/60',
+        isProbatoire && !isNew && 'border-l-2 border-l-warning/50',
         entry.is_inactive && 'opacity-50',
       )}
     >
@@ -118,6 +120,12 @@ export default function PayrollRow({
           />
           {isNew && (
             <Badge variant="info" className="shrink-0 text-[10px]">{tr.common.new}</Badge>
+          )}
+          {isProbatoire && (
+            <Badge variant="warning" className="shrink-0 text-[10px]">
+              Probatoire
+              {entry.probatoire_since && ` · ${entry.probatoire_since.slice(5).split('-').reverse().join('/')}`}
+            </Badge>
           )}
           {isCoordModified && !isNew && (
             <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-accent-purple" />

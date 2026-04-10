@@ -249,6 +249,9 @@ const fr = {
       actions: 'Actions',
       active: 'Actif',
       inactive: 'Inactif',
+      probatoire: 'Probatoire',
+      probatoire_since: 'depuis',
+      markProbatoire: 'Marquer probatoire',
     },
     addModal: {
       title: 'Ajouter un membre',
@@ -268,6 +271,8 @@ const fr = {
       memberAdded: 'Membre ajouté avec succès.',
       memberUpdated: 'Membre mis à jour.',
       memberDeactivated: 'Membre désactivé.',
+      probationUpdated: 'Statut de probation mis à jour.',
+      errorProbation: 'Erreur lors de la mise à jour de la probation.',
       bulkImported: '{added} ajouté(s), {reactivated} réactivé(s), {skipped} ignoré(s).',
       errorAdd: 'Erreur lors de l\'ajout du membre.',
       errorUpdate: 'Erreur lors de la mise à jour.',
