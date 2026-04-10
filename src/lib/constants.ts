@@ -16,6 +16,8 @@ const GRADE_GLOBAL_ORDER: Record<string, number> = {
   'Responsable Builder': 7,
   'Responsable CM': 7,
   'Responsable Lore': 7,
+  'Responsable Modélisation': 7,
+  'Modélisateur Senior': 8,
   'Modérateur Senior': 8,
   'Animateur Senior': 8,
   'MJ Senior': 8,
@@ -28,6 +30,7 @@ const GRADE_GLOBAL_ORDER: Record<string, number> = {
   'CM': 9,
   'Lore': 9,
   'Equilibrage': 9,
+  'Modélisateur': 9,
   'Référent Streamer': 9,
 };
 
@@ -65,6 +68,8 @@ export const ROLE_TO_POLE: Record<Role, Pole | null> = {
   [Role.EQUILIBRAGE_PVP]: Pole.EQUILIBRAGE_PVP,
   [Role.RESP_CM]: Pole.RESPONSABLES,
   [Role.CM]: Pole.COMMUNITY_MANAGER,
+  [Role.RESP_MODELISATION]: Pole.RESPONSABLES,
+  [Role.MODELISATEUR]: Pole.MODELISATION,
   [Role.REFERENT_STREAMER]: Pole.RESPONSABLES, // paid in responsables, fills no payroll
 };
 
@@ -87,6 +92,7 @@ export const GRADES_BY_POLE: Record<Pole, string[]> = {
     'Responsable Lore',
     'Resp. Équilibrage PvP',
     'Responsable CM',
+    'Responsable Modélisation',
     'Référent Streamer',
   ],
   [Pole.MODERATION]: ['Modérateur Senior', 'Modérateur'],
@@ -95,6 +101,7 @@ export const GRADES_BY_POLE: Record<Pole, string[]> = {
   [Pole.DOUANE]: ['Douanier Senior', 'Douanier'],
   [Pole.BUILDER]: ['Builder'],
   [Pole.COMMUNITY_MANAGER]: ['CM'],
+  [Pole.MODELISATION]: ['Modélisateur Senior', 'Modélisateur'],
   [Pole.LORE]: ['Lore'],
   [Pole.EQUILIBRAGE_PVP]: ['Equilibrage'],
   [Pole.SUPPORT]: [],
@@ -118,19 +125,21 @@ export const ROLE_HIERARCHY: Record<Role, number> = {
   [Role.RESP_CM]: 14,
   [Role.RESP_LORE]: 15,
   [Role.RESP_EQUILIBRAGE_PVP]: 16,
-  [Role.REFERENT_STREAMER]: 17,
-  [Role.MODERATEUR_SENIOR]: 18,
-  [Role.ANIMATEUR_SENIOR]: 19,
-  [Role.MJ_SENIOR]: 20,
-  [Role.DOUANIER_SENIOR]: 21,
-  [Role.MODERATEUR]: 22,
-  [Role.ANIMATEUR]: 23,
-  [Role.MJ]: 24,
-  [Role.DOUANIER]: 25,
-  [Role.BUILDER]: 26,
-  [Role.CM]: 27,
-  [Role.LORE]: 28,
-  [Role.EQUILIBRAGE_PVP]: 29,
+  [Role.RESP_MODELISATION]: 17,
+  [Role.REFERENT_STREAMER]: 18,
+  [Role.MODERATEUR_SENIOR]: 19,
+  [Role.ANIMATEUR_SENIOR]: 20,
+  [Role.MJ_SENIOR]: 21,
+  [Role.DOUANIER_SENIOR]: 22,
+  [Role.MODERATEUR]: 23,
+  [Role.ANIMATEUR]: 24,
+  [Role.MJ]: 25,
+  [Role.DOUANIER]: 26,
+  [Role.BUILDER]: 27,
+  [Role.CM]: 28,
+  [Role.LORE]: 29,
+  [Role.EQUILIBRAGE_PVP]: 30,
+  [Role.MODELISATEUR]: 31,
 };
 
 export const ROLE_LABELS: Record<Role, string> = {
@@ -163,6 +172,8 @@ export const ROLE_LABELS: Record<Role, string> = {
   [Role.EQUILIBRAGE_PVP]: 'Équilibrage PvP',
   [Role.RESP_CM]: 'Resp. CM',
   [Role.CM]: 'CM',
+  [Role.RESP_MODELISATION]: 'Resp. Modélisation',
+  [Role.MODELISATEUR]: 'Modélisateur',
   [Role.REFERENT_STREAMER]: 'Référent Streamer',
 };
 
@@ -194,6 +205,9 @@ export const GRADE_TO_ROLE: Record<string, Role> = {
   'Responsable Lore': Role.RESP_LORE,
   'Lore': Role.LORE,
   'Equilibrage': Role.EQUILIBRAGE_PVP,
+  'Responsable Modélisation': Role.RESP_MODELISATION,
+  'Modélisateur Senior': Role.MODELISATEUR,
+  'Modélisateur': Role.MODELISATEUR,
   'Référent Streamer': Role.REFERENT_STREAMER,
 };
 
@@ -211,6 +225,7 @@ export const RESP_PAYROLL_POLE: Partial<Record<Role, Pole>> = {
   [Role.RESP_LORE]: Pole.LORE,
   [Role.RESP_EQUILIBRAGE_PVP]: Pole.EQUILIBRAGE_PVP,
   [Role.RESP_CM]: Pole.COMMUNITY_MANAGER,
+  [Role.RESP_MODELISATION]: Pole.MODELISATION,
   [Role.GERANT_EQUILIBRAGE]: Pole.EQUILIBRAGE_PVP,
 };
 
@@ -224,6 +239,7 @@ export const POLE_LABELS: Record<Pole, string> = {
   [Pole.DOUANE]: 'Douane',
   [Pole.BUILDER]: 'Builder',
   [Pole.COMMUNITY_MANAGER]: 'Community Manager',
+  [Pole.MODELISATION]: 'Modélisation',
   [Pole.LORE]: 'Lore',
   [Pole.EQUILIBRAGE_PVP]: 'Équilibrage PvP',
   [Pole.SUPPORT]: 'Support',
@@ -249,6 +265,7 @@ export const POLE_RESPONSIBLE_ROLES: Role[] = [
   Role.RESP_LORE,
   Role.RESP_EQUILIBRAGE_PVP,
   Role.RESP_CM,
+  Role.RESP_MODELISATION,
 ];
 
 export const PANEL_ACCESS_ROLES: Role[] = [
@@ -282,7 +299,8 @@ const RESPONSABLES_GRADE_ORDER: Record<string, number> = {
   'Responsable Builder': 5,
   'Responsable Animation': 6,
   'Resp. Équilibrage PvP': 7,
-  'Référent Streamer': 8,
+  'Responsable Modélisation': 8,
+  'Référent Streamer': 9,
 };
 
 /** Returns a sort priority for a grade within a pole (lower = higher rank). */
@@ -365,6 +383,10 @@ const GRADE_COLORS: Record<string, { bg: string; text: string }> = {
   'Lore':                      { bg: 'rgba(14, 165, 233, 0.08)', text: '#7dd3fc' },  // sky lighter
   // Équilibrage PvP
   'Equilibrage':               { bg: 'rgba(239, 68, 68, 0.10)', text: '#fca5a5' },  // red
+  // Modélisation
+  'Responsable Modélisation':  { bg: 'rgba(16, 185, 129, 0.15)', text: '#34d399' },  // emerald strong
+  'Modélisateur Senior':       { bg: 'rgba(16, 185, 129, 0.12)', text: '#34d399' },  // emerald
+  'Modélisateur':              { bg: 'rgba(16, 185, 129, 0.08)', text: '#6ee7b7' },  // emerald lighter
   // Streamer
   'Référent Streamer':         { bg: 'rgba(99, 102, 241, 0.12)', text: '#818cf8' },  // indigo
   // Short-form aliases (used by ROLE_LABELS)

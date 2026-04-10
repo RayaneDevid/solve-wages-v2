@@ -28,6 +28,8 @@ export enum Role {
   EQUILIBRAGE_PVP = 'equilibrage_pvp',
   RESP_CM = 'resp_cm',
   CM = 'cm',
+  RESP_MODELISATION = 'resp_modelisation',
+  MODELISATEUR = 'modelisateur',
   REFERENT_STREAMER = 'referent_streamer',
 }
 
@@ -43,6 +45,7 @@ export enum Pole {
   LORE = 'lore',
   EQUILIBRAGE_PVP = 'equilibrage_pvp',
   COMMUNITY_MANAGER = 'community_manager',
+  MODELISATION = 'modelisation',
   SUPPORT = 'support',
 }
 
