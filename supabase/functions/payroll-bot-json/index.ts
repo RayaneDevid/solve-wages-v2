@@ -108,16 +108,27 @@ serve(async (req) => {
       primesMap.set(p.discord_id, (primesMap.get(p.discord_id) ?? 0) + p.amount);
     }
 
-    const botJson = (entries ?? []).map((entry: PayrollEntry) => ({
-      'ID Discord': entry.discord_id,
-      'Steam ID': entry.steam_id ?? '',
-      'Nom': entry.discord_username,
-      'Montant de la paie': String(entry.montant + (primesMap.get(entry.discord_id) ?? 0)),
-      'Confirmer pour envoi par le BOT': entry.confirmed_by_coordinator,
-      'Confirmé par Nagisa': false,
-      'Pôle': POLE_LABELS[entry.pole] ?? entry.pole,
-      'Grade': entry.grade,
-    }));
+    // Track which discord_ids have already received their prime, to avoid
+    // counting it multiple times for users with entries in several poles.
+    const primeAlreadyApplied = new Set<string>();
+
+    const botJson = (entries ?? []).map((entry: PayrollEntry) => {
+      let prime = 0;
+      if (!primeAlreadyApplied.has(entry.discord_id)) {
+        prime = primesMap.get(entry.discord_id) ?? 0;
+        if (prime > 0) primeAlreadyApplied.add(entry.discord_id);
+      }
+      return {
+        'ID Discord': entry.discord_id,
+        'Steam ID': entry.steam_id ?? '',
+        'Nom': entry.discord_username,
+        'Montant de la paie': String(entry.montant + prime),
+        'Confirmer pour envoi par le BOT': entry.confirmed_by_coordinator,
+        'Confirmé par Nagisa': false,
+        'Pôle': POLE_LABELS[entry.pole] ?? entry.pole,
+        'Grade': entry.grade,
+      };
+    });
 
     // Dev only: add a fake entry to test the bot without going through the frontend/ Don't push to production.
     botJson.push({
