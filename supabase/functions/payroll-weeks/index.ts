@@ -123,9 +123,23 @@ serve(async (req) => {
         submissions = subs ?? [];
       }
 
+      // Fetch totals per week in a single query
+      const totalsMap: Record<string, number> = {};
+      if (weekIds.length > 0) {
+        const { data: entriesAgg } = await supabase
+          .from('payroll_entries')
+          .select('payroll_week_id, montant')
+          .in('payroll_week_id', weekIds);
+
+        for (const e of (entriesAgg ?? []) as Array<{ payroll_week_id: string; montant: number }>) {
+          totalsMap[e.payroll_week_id] = (totalsMap[e.payroll_week_id] ?? 0) + (e.montant ?? 0);
+        }
+      }
+
       const result = (weeks ?? []).map((week: { id: string }) => ({
         ...week,
         submissions: submissions.filter((s) => s.payroll_week_id === week.id),
+        total_montant: totalsMap[week.id] ?? 0,
       }));
 
       return jsonResponse(result);
