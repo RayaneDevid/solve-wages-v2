@@ -76,6 +76,7 @@ export interface PayrollWeek {
   locked_at: string | null;
   locked_by_id: string | null;
   created_at: string;
+  total_montant?: number;
   submissions: PayrollSubmission[];
 }
 

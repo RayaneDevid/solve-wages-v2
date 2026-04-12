@@ -237,7 +237,10 @@ export default function HistoryPage() {
                     {submittedCount} / {ALL_POLES.length} {tr.poles.moderation && 'pôles'}
                   </TableCell>
                   <TableCell>
-                    <span className="font-medium text-accent">—</span>
+                    {week.total_montant != null && week.total_montant > 0
+                      ? <span className="font-medium text-accent">{week.total_montant.toLocaleString('fr-FR')} {tr.common.credits}</span>
+                      : <span className="text-text-tertiary">—</span>
+                    }
                   </TableCell>
                   <TableCell>
                     <span className="text-xs text-text-secondary">
