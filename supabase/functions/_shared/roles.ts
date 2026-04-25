@@ -8,10 +8,11 @@ export const RESP_TO_POLE: Record<string, string> = {
   resp_equilibrage_pvp: 'equilibrage_pvp',
   resp_cm: 'community_manager',
   resp_modelisation: 'modelisation',
+  resp_bdm: 'bdm',
   gerant_equilibrage: 'equilibrage_pvp',
 };
 
-export const GERANT_STAFF_POLES = ['administration', 'responsables', 'moderation', 'animation', 'mj', 'douane', 'builder', 'lore', 'equilibrage_pvp', 'community_manager', 'modelisation', 'support'];
+export const GERANT_STAFF_POLES = ['administration', 'responsables', 'moderation', 'animation', 'mj', 'douane', 'builder', 'lore', 'equilibrage_pvp', 'community_manager', 'modelisation', 'bdm', 'support'];
 
 export interface AppUser {
   id: string;

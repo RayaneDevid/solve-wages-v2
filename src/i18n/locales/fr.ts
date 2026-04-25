@@ -354,6 +354,8 @@ const fr = {
     resp_cm: 'Resp. CM',
     cm: 'CM',
     referent_streamer: 'Référent Streamer',
+    resp_bdm: 'Resp. BDM',
+    bdm: 'BDM',
   },
   poles: {
     gerance: 'Gérance',
@@ -367,6 +369,7 @@ const fr = {
     community_manager: 'Community Manager',
     lore: 'Lore',
     equilibrage_pvp: 'Équilibrage PvP',
+    bdm: 'BDM',
     support: 'Support',
   },
 } as const;

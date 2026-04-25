@@ -188,6 +188,7 @@ Mapping rôle → pôle :
 | Lore | resp_lore, lore |
 | Équilibrage PvP | resp_equilibrage_pvp, equilibrage_pvp |
 | Community Manager | resp_cm, cm |
+| BDM | resp_bdm, bdm |
 | Support | aucun rôle dédié (coordinateur uniquement) |
 
 Le coordinateur n'appartient à aucun pôle, il supervise tous les pôles. Le pôle Support est spécial : pas de rôle dédié, seul le coordinateur peut y gérer des membres et saisir des paies. Les grades du pôle Support sont en texte libre (pas de liste fixe).
@@ -493,6 +494,7 @@ Le coordinateur peut ajouter/modifier des staffs sur **n'importe quel pôle** (p
 | Lore | Lore |
 | Équilibrage PvP | Equilibrage |
 | Community Manager | CM |
+| BDM | BDM |
 | Support | *(texte libre, pas de grades fixes)* |
 
 ### Dates des compteurs

@@ -113,11 +113,13 @@ export default function PayrollRow({
     >
       <td className="px-3 py-2.5 text-sm">
         <div className="flex items-center gap-2">
-          <InlineInput
-            value={entry.discord_username}
-            onChange={(v) => onUpdate(entry.discord_id, 'discord_username', v)}
-            disabled={!canDeleteOrAdd || !isNew}
-          />
+          <div className="min-w-0 flex-1">
+            <InlineInput
+              value={entry.discord_username}
+              onChange={(v) => onUpdate(entry.discord_id, 'discord_username', v)}
+              disabled={!canDeleteOrAdd || !isNew}
+            />
+          </div>
           {isNew && (
             <Badge variant="info" className="shrink-0 text-[10px]">{tr.common.new}</Badge>
           )}

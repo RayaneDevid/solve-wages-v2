@@ -31,6 +31,8 @@ export enum Role {
   RESP_MODELISATION = 'resp_modelisation',
   MODELISATEUR = 'modelisateur',
   REFERENT_STREAMER = 'referent_streamer',
+  RESP_BDM = 'resp_bdm',
+  BDM = 'bdm',
 }
 
 export enum Pole {
@@ -46,6 +48,7 @@ export enum Pole {
   EQUILIBRAGE_PVP = 'equilibrage_pvp',
   COMMUNITY_MANAGER = 'community_manager',
   MODELISATION = 'modelisation',
+  BDM = 'bdm',
   SUPPORT = 'support',
 }
 

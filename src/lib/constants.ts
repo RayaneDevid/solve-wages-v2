@@ -32,6 +32,7 @@ const GRADE_GLOBAL_ORDER: Record<string, number> = {
   'Equilibrage': 9,
   'Modélisateur': 9,
   'Référent Streamer': 9,
+  'BDM': 9,
 };
 
 export function getGradeGlobalPriority(grade: string): number {
@@ -71,6 +72,8 @@ export const ROLE_TO_POLE: Record<Role, Pole | null> = {
   [Role.RESP_MODELISATION]: Pole.RESPONSABLES,
   [Role.MODELISATEUR]: Pole.MODELISATION,
   [Role.REFERENT_STREAMER]: Pole.RESPONSABLES, // paid in responsables, fills no payroll
+  [Role.RESP_BDM]: Pole.RESPONSABLES,
+  [Role.BDM]: Pole.BDM,
 };
 
 export const GRADES_BY_POLE: Record<Pole, string[]> = {
@@ -94,6 +97,7 @@ export const GRADES_BY_POLE: Record<Pole, string[]> = {
     'Responsable CM',
     'Responsable Modélisation',
     'Référent Streamer',
+    'Responsable BDM',
   ],
   [Pole.MODERATION]: ['Modérateur Senior', 'Modérateur'],
   [Pole.ANIMATION]: ['Animateur Senior', 'Animateur'],
@@ -102,6 +106,7 @@ export const GRADES_BY_POLE: Record<Pole, string[]> = {
   [Pole.BUILDER]: ['Builder'],
   [Pole.COMMUNITY_MANAGER]: ['CM'],
   [Pole.MODELISATION]: ['Modélisateur Senior', 'Modélisateur'],
+  [Pole.BDM]: ['BDM'],
   [Pole.LORE]: ['Lore'],
   [Pole.EQUILIBRAGE_PVP]: ['Equilibrage'],
   [Pole.SUPPORT]: [],
@@ -140,6 +145,8 @@ export const ROLE_HIERARCHY: Record<Role, number> = {
   [Role.LORE]: 29,
   [Role.EQUILIBRAGE_PVP]: 30,
   [Role.MODELISATEUR]: 31,
+  [Role.RESP_BDM]: 18,
+  [Role.BDM]: 32,
 };
 
 export const ROLE_LABELS: Record<Role, string> = {
@@ -175,6 +182,8 @@ export const ROLE_LABELS: Record<Role, string> = {
   [Role.RESP_MODELISATION]: 'Resp. Modélisation',
   [Role.MODELISATEUR]: 'Modélisateur',
   [Role.REFERENT_STREAMER]: 'Référent Streamer',
+  [Role.RESP_BDM]: 'Resp. BDM',
+  [Role.BDM]: 'BDM',
 };
 
 // Maps grade display names (from GRADES_BY_POLE / CSV) → Role enum values
@@ -209,6 +218,8 @@ export const GRADE_TO_ROLE: Record<string, Role> = {
   'Modélisateur Senior': Role.MODELISATEUR,
   'Modélisateur': Role.MODELISATEUR,
   'Référent Streamer': Role.REFERENT_STREAMER,
+  'Responsable BDM': Role.RESP_BDM,
+  'BDM': Role.BDM,
 };
 
 export function gradeToRole(grade: string): Role | null {
@@ -226,6 +237,7 @@ export const RESP_PAYROLL_POLE: Partial<Record<Role, Pole>> = {
   [Role.RESP_EQUILIBRAGE_PVP]: Pole.EQUILIBRAGE_PVP,
   [Role.RESP_CM]: Pole.COMMUNITY_MANAGER,
   [Role.RESP_MODELISATION]: Pole.MODELISATION,
+  [Role.RESP_BDM]: Pole.BDM,
   [Role.GERANT_EQUILIBRAGE]: Pole.EQUILIBRAGE_PVP,
 };
 
@@ -241,6 +253,7 @@ export const POLE_LABELS: Record<Pole, string> = {
   [Pole.COMMUNITY_MANAGER]: 'Community Manager',
   [Pole.MODELISATION]: 'Modélisation',
   [Pole.LORE]: 'Lore',
+  [Pole.BDM]: 'BDM',
   [Pole.EQUILIBRAGE_PVP]: 'Équilibrage PvP',
   [Pole.SUPPORT]: 'Support',
 };
@@ -266,6 +279,7 @@ export const POLE_RESPONSIBLE_ROLES: Role[] = [
   Role.RESP_EQUILIBRAGE_PVP,
   Role.RESP_CM,
   Role.RESP_MODELISATION,
+  Role.RESP_BDM,
 ];
 
 export const PANEL_ACCESS_ROLES: Role[] = [
@@ -301,6 +315,7 @@ const RESPONSABLES_GRADE_ORDER: Record<string, number> = {
   'Resp. Équilibrage PvP': 7,
   'Responsable Modélisation': 8,
   'Référent Streamer': 9,
+  'Responsable BDM': 10,
 };
 
 /** Returns a sort priority for a grade within a pole (lower = higher rank). */
@@ -389,6 +404,9 @@ const GRADE_COLORS: Record<string, { bg: string; text: string }> = {
   'Modélisateur':              { bg: 'rgba(16, 185, 129, 0.08)', text: '#6ee7b7' },  // emerald lighter
   // Streamer
   'Référent Streamer':         { bg: 'rgba(99, 102, 241, 0.12)', text: '#818cf8' },  // indigo
+  // BDM
+  'Responsable BDM':          { bg: 'rgba(217, 70, 239, 0.15)', text: '#e879f9' },  // fuchsia strong
+  'BDM':                      { bg: 'rgba(217, 70, 239, 0.08)', text: '#f0abfc' },  // fuchsia lighter
   // Short-form aliases (used by ROLE_LABELS)
   'Resp. Modération':          { bg: 'rgba(244, 63, 94, 0.15)',  text: '#fb7185' },
   'Resp. Animation':           { bg: 'rgba(251, 146, 60, 0.15)', text: '#fb923c' },
@@ -399,6 +417,7 @@ const GRADE_COLORS: Record<string, { bg: string; text: string }> = {
   'Resp. Lore':                { bg: 'rgba(14, 165, 233, 0.15)', text: '#38bdf8' },
   'Resp. Équilibrage PvP':     { bg: 'rgba(239, 68, 68, 0.12)', text: '#fca5a5' },
   'Équilibrage PvP':           { bg: 'rgba(239, 68, 68, 0.10)', text: '#fca5a5' },
+  'Resp. BDM':                 { bg: 'rgba(217, 70, 239, 0.15)', text: '#e879f9' },
 };
 
 export function getGradeColor(grade: string): { bg: string; text: string } {
