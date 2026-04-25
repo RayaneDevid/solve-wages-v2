@@ -256,6 +256,14 @@ const fr = {
     addModal: {
       title: 'Ajouter un membre',
       description: 'Ajoutez un nouveau membre au pôle.',
+      manual: 'Manuellement',
+      fromExisting: 'Depuis un autre pôle',
+      searchMembers: 'Rechercher...',
+      selectAll: 'Tout sélectionner',
+      deselectAll: 'Tout désélectionner',
+      gradeForAll: 'Grade (pour ce pôle)',
+      addCount: 'Ajouter {count} membre(s)',
+      noEligible: 'Aucun membre disponible depuis les autres pôles.',
     },
     bulkModal: {
       title: 'Import CSV en masse',

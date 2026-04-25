@@ -372,6 +372,32 @@ export default function MembersPage() {
     }
   }, [addMember, activePole, tr]);
 
+  const handleBulkAddFromExisting = useCallback(async (members: { pole?: string; discord_username: string; discord_id: string; steam_id: string; grade: string }[]) => {
+    if (!members.length) return;
+    const pole = members[0].pole ?? activePole;
+    if (!pole) return;
+    try {
+      const result = await bulkImport.mutateAsync({
+        pole,
+        members: members.map((m) => ({
+          discord_username: m.discord_username,
+          discord_id: m.discord_id,
+          steam_id: m.steam_id || undefined,
+          grade: m.grade,
+        })),
+      });
+      showToast(
+        tr.members.toast.bulkImported
+          .replace('{added}', String(result.added))
+          .replace('{reactivated}', String(result.reactivated))
+          .replace('{skipped}', String(result.skipped)),
+      );
+      setShowAddModal(false);
+    } catch {
+      showToast(tr.members.toast.errorBulk, 'error');
+    }
+  }, [bulkImport, activePole, tr]);
+
   const handleBulkImport = useCallback(async (parsedMembers: { discord_username: string; discord_id: string; steam_id: string; grade: string; pole?: string }[], pole?: string) => {
     try {
       // If members have individual poles (from CSV with pole column), group and import per pole
@@ -697,8 +723,9 @@ export default function MembersPage() {
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
         onAdd={handleAddMember}
+        onBulkAdd={handleBulkAddFromExisting}
         pole={activePole}
-        loading={addMember.isPending}
+        loading={addMember.isPending || bulkImport.isPending}
       />
       <BulkImportMembersModal
         isOpen={showImportModal}
