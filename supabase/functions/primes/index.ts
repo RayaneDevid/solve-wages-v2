@@ -143,38 +143,6 @@ serve(async (req) => {
         return errorResponse('La semaine est verrouillée', 400);
       }
 
-      const { data: existing } = await supabase
-        .from('primes')
-        .select('*')
-        .eq('payroll_week_id', week_id)
-        .eq('discord_id', discord_id)
-        .maybeSingle();
-
-      if (existing) {
-        if (existing.status !== 'pending') {
-          return errorResponse('Cette prime a déjà été traitée et ne peut plus être modifiée', 400);
-        }
-
-        const { data: updated, error: updateError } = await supabase
-          .from('primes')
-          .update({
-            discord_username,
-            amount,
-            comment: comment ?? null,
-            submitted_by_id: user.id,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', existing.id)
-          .select()
-          .single();
-
-        if (updateError) {
-          return errorResponse(updateError.message, 500);
-        }
-
-        return jsonResponse(updated);
-      }
-
       const { data: created, error: insertError } = await supabase
         .from('primes')
         .insert({
