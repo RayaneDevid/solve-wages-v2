@@ -5,6 +5,7 @@ import { Pole, type PayrollWeek, type PayrollEntry } from '@/types';
 import { formatDate, formatShortDate } from '@/lib/utils';
 import { POLE_LABELS } from '@/lib/constants';
 import { usePayrollWeeks, usePayrollEntries, useExportPayroll } from '@/hooks/queries/use-payroll';
+import { usePrimes } from '@/hooks/queries/use-primes';
 import { useAuthStore } from '@/stores/auth.store';
 import { isCoordinateur } from '@/lib/utils';
 import { Table, TableHeader, TableBody, TableRow, TableCell } from '@/components/ui/table';
@@ -57,6 +58,7 @@ function WeekDetailView({ week, onBack }: { week: PayrollWeek; onBack: () => voi
   const user = useAuthStore((s) => s.user);
   const isCoord = user ? isCoordinateur(user.role) : false;
   const { data: allEntries, isLoading } = usePayrollEntries(week.id);
+  const { data: primes } = usePrimes(week.id);
   const { downloadCsv, copyTsv } = useExportPayroll();
 
   const entries = allEntries?.map(toLocalEntry) ?? [];
@@ -153,6 +155,73 @@ function WeekDetailView({ week, onBack }: { week: PayrollWeek; onBack: () => voi
               </div>
             );
           })}
+
+          {primes && primes.length > 0 && (
+            <div>
+              <div className="mb-3 flex items-center gap-3">
+                <h3 className="text-base font-semibold text-text-primary">{tr.primes.title}</h3>
+                <span className="text-xs text-text-tertiary">{primes.length} prime{primes.length > 1 ? 's' : ''}</span>
+                {(() => {
+                  const approvedTotal = primes
+                    .filter((p) => p.status === 'approved')
+                    .reduce((s, p) => s + p.amount, 0);
+                  return approvedTotal > 0 ? (
+                    <span className="text-xs font-medium text-accent">
+                      {approvedTotal.toLocaleString('fr-FR')} {tr.common.credits} approuvés
+                    </span>
+                  ) : null;
+                })()}
+              </div>
+              <Table>
+                <TableHeader>
+                  <tr>
+                    <TableCell header>{tr.primes.member}</TableCell>
+                    <TableCell header>{tr.primes.amount}</TableCell>
+                    <TableCell header>{tr.primes.comment}</TableCell>
+                    <TableCell header>{tr.primes.submittedBy}</TableCell>
+                    <TableCell header>{tr.admin.fields.status}</TableCell>
+                  </tr>
+                </TableHeader>
+                <TableBody>
+                  {primes.map((prime) => (
+                    <TableRow key={prime.id}>
+                      <TableCell>
+                        <span className="font-medium text-sm">{prime.discord_username}</span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="font-medium text-accent">
+                          {prime.amount.toLocaleString('fr-FR')} {tr.common.credits}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm text-text-secondary">{prime.comment ?? '—'}</span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-xs text-text-secondary">{prime.submitted_by_username ?? '—'}</span>
+                      </TableCell>
+                      <TableCell>
+                        {prime.status === 'approved' && (
+                          <span className="inline-flex items-center rounded-full bg-success/15 px-2.5 py-0.5 text-xs font-medium text-success">
+                            {tr.primes.status.approved}
+                          </span>
+                        )}
+                        {prime.status === 'rejected' && (
+                          <span className="inline-flex items-center rounded-full bg-danger/15 px-2.5 py-0.5 text-xs font-medium text-danger">
+                            {tr.primes.status.rejected}
+                          </span>
+                        )}
+                        {prime.status === 'pending' && (
+                          <span className="inline-flex items-center rounded-full bg-warning/15 px-2.5 py-0.5 text-xs font-medium text-warning">
+                            {tr.primes.status.pending}
+                          </span>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
 
           {poleSummaries.length > 0 && (
             <PayrollSummary poleSummaries={poleSummaries} />

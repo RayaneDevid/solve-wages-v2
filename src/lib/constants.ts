@@ -417,6 +417,7 @@ const GRADE_COLORS: Record<string, { bg: string; text: string }> = {
   'Resp. Lore':                { bg: 'rgba(14, 165, 233, 0.15)', text: '#38bdf8' },
   'Resp. Équilibrage PvP':     { bg: 'rgba(239, 68, 68, 0.12)', text: '#fca5a5' },
   'Équilibrage PvP':           { bg: 'rgba(239, 68, 68, 0.10)', text: '#fca5a5' },
+  'Resp. Modélisation':        { bg: 'rgba(16, 185, 129, 0.15)', text: '#34d399' },
   'Resp. BDM':                 { bg: 'rgba(217, 70, 239, 0.15)', text: '#e879f9' },
 };
 
