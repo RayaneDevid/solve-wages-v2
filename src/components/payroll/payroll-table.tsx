@@ -44,6 +44,7 @@ export default function PayrollTable({
   const tr = t();
   const counters = getPoleCounterFields(pole);
   const showTotal = pole === Pole.MODERATION || pole === Pole.MJ;
+  const showHeures = pole === Pole.MJ;
   const canDeleteOrAdd = editable && weekStatus !== 'locked';
 
   const sortedEntries = useMemo(
@@ -91,6 +92,11 @@ export default function PayrollTable({
                 {pole === Pole.MJ ? tr.payroll.fields.nbAnimationsMj : tr.common.total}
               </th>
             )}
+            {showHeures && (
+              <th className="px-3 py-3 text-center text-[11px] font-semibold uppercase tracking-wider text-text-secondary">
+                {fieldLabels.nbHeuresMj}
+              </th>
+            )}
             <th className="px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-text-secondary">
               {fieldLabels.commentaire}
             </th>
@@ -119,7 +125,7 @@ export default function PayrollTable({
           {sortedEntries.length === 0 ? (
             <tr>
               <td
-                colSpan={4 + counters.length + (showTotal ? 1 : 0) + 4 + (isCoordinator ? 1 : 0) + (canDeleteOrAdd ? 1 : 0)}
+                colSpan={4 + counters.length + (showTotal ? 1 : 0) + (showHeures ? 1 : 0) + 4 + (isCoordinator ? 1 : 0) + (canDeleteOrAdd ? 1 : 0)}
                 className="px-5 py-12 text-center text-sm text-text-tertiary"
               >
                 {tr.payroll.noEntries}
@@ -135,6 +141,7 @@ export default function PayrollTable({
                 weekStatus={weekStatus}
                 isCoordinator={isCoordinator}
                 showTotal={showTotal}
+                showHeures={showHeures}
                 primeAmount={primesByDiscordId?.get(entry.discord_id)}
                 onUpdate={onUpdate}
                 onDelete={onDelete}

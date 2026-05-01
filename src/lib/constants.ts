@@ -433,7 +433,6 @@ const POLE_COUNTER_FIELDS: Partial<Record<Pole, { field: string; label: string }
   ],
   animation: [{ field: 'nb_animations', label: 'nbAnimations' }],
   mj: [
-    { field: 'nb_animations_mj_p', label: 'nbAnimationsMjP' },
     { field: 'nb_animations_mj_m', label: 'nbAnimationsMjM' },
     { field: 'nb_animations_mj_g', label: 'nbAnimationsMjG' },
   ],

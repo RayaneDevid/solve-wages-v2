@@ -16,6 +16,7 @@ interface PayrollRowProps {
   weekStatus: 'open' | 'closed' | 'locked';
   isCoordinator?: boolean;
   showTotal?: boolean;
+  showHeures?: boolean;
   primeAmount?: number;
   onUpdate: (discordId: string, field: string, value: string | number | boolean) => void;
   onDelete: (discordId: string) => void;
@@ -85,6 +86,7 @@ export default function PayrollRow({
   weekStatus,
   isCoordinator,
   showTotal,
+  showHeures,
   primeAmount,
   onUpdate,
   onDelete,
@@ -171,8 +173,19 @@ export default function PayrollRow({
       {showTotal && (
         <td className="px-3 py-2.5 text-center text-sm font-medium text-text-primary">
           {pole === 'mj'
-            ? (entry.nb_animations_mj_p ?? 0) + (entry.nb_animations_mj_m ?? 0) + (entry.nb_animations_mj_g ?? 0)
+            ? (entry.nb_animations_mj_m ?? 0) + (entry.nb_animations_mj_g ?? 0)
             : (entry.tickets_ig ?? 0) + (entry.tickets_discord ?? 0) + (entry.bda_count ?? 0)}
+        </td>
+      )}
+
+      {showHeures && (
+        <td className="px-3 py-2.5 text-center text-sm">
+          <InlineInput
+            type="number"
+            value={entry.nb_heures_mj ?? 0}
+            onChange={(v) => onUpdate(entry.discord_id, 'nb_heures_mj', parseInt(v) || 0)}
+            disabled={!canEditPayFields}
+          />
         </td>
       )}
 
