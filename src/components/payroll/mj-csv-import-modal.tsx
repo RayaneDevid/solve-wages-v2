@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
+import { Upload } from 'lucide-react';
 import Modal from '@/components/ui/modal';
 import Button from '@/components/ui/button';
 import { t } from '@/i18n';
@@ -45,7 +46,7 @@ function parseCsvLine(line: string): string[] {
   return result;
 }
 
-const EXPECTED_HEADERS = ['discord_id', 'steam_id', 'grade', 'moyenne', 'grande', 'total_animations', 'total_heures', 'commentaire', 'montant'];
+const EXPECTED_COLS = 9;
 
 function parseMjCsv(raw: string): { rows: MjCsvRow[]; error: string | null } {
   const lines = raw
@@ -58,7 +59,6 @@ function parseMjCsv(raw: string): { rows: MjCsvRow[]; error: string | null } {
   let dataLines = lines;
   const firstCells = parseCsvLine(lines[0]);
 
-  // Skip header row if present
   if (firstCells[0] === 'discord_id' || firstCells[0] === '"discord_id"') {
     dataLines = lines.slice(1);
   }
@@ -69,8 +69,8 @@ function parseMjCsv(raw: string): { rows: MjCsvRow[]; error: string | null } {
 
   for (let i = 0; i < dataLines.length; i++) {
     const cells = parseCsvLine(dataLines[i]);
-    if (cells.length < EXPECTED_HEADERS.length) {
-      return { rows: [], error: `Ligne ${i + 1} : ${cells.length} colonne(s) au lieu de ${EXPECTED_HEADERS.length}` };
+    if (cells.length < EXPECTED_COLS) {
+      return { rows: [], error: `Ligne ${i + 1} : ${cells.length} colonne(s) au lieu de ${EXPECTED_COLS}` };
     }
 
     const [discord_id, steam_id, gradeCode, moyenneStr, grandeStr, , heures, commentaire, montantStr] = cells;
@@ -79,12 +79,16 @@ function parseMjCsv(raw: string): { rows: MjCsvRow[]; error: string | null } {
       return { rows: [], error: `Ligne ${i + 1} : discord_id manquant` };
     }
 
-    const grade = MJ_GRADE_MAP[gradeCode] ?? gradeCode;
-    const moyenne = parseInt(moyenneStr) || 0;
-    const grande = parseInt(grandeStr) || 0;
-    const montant = parseInt(montantStr) || 0;
-
-    rows.push({ discord_id, steam_id, grade, moyenne, grande, heures, commentaire, montant });
+    rows.push({
+      discord_id,
+      steam_id,
+      grade: MJ_GRADE_MAP[gradeCode] ?? gradeCode,
+      moyenne: parseInt(moyenneStr) || 0,
+      grande: parseInt(grandeStr) || 0,
+      heures,
+      commentaire,
+      montant: parseInt(montantStr) || 0,
+    });
   }
 
   return { rows, error: null };
@@ -94,8 +98,27 @@ export default function MjCsvImportModal({ isOpen, onClose, onImport }: MjCsvImp
   const tr = t();
   const [csv, setCsv] = useState('');
   const [loading, setLoading] = useState(false);
+  const [fileName, setFileName] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { rows, error } = useMemo(() => parseMjCsv(csv), [csv]);
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setFileName(file.name);
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setCsv((ev.target?.result as string) ?? '');
+    };
+    reader.readAsText(file, 'UTF-8');
+    e.target.value = '';
+  }
+
+  function handleCsvChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
+    setCsv(e.target.value);
+    setFileName(null);
+  }
 
   async function handleImport() {
     if (rows.length === 0 || error) return;
@@ -103,6 +126,7 @@ export default function MjCsvImportModal({ isOpen, onClose, onImport }: MjCsvImp
     try {
       await onImport(rows);
       setCsv('');
+      setFileName(null);
       onClose();
     } finally {
       setLoading(false);
@@ -119,11 +143,30 @@ export default function MjCsvImportModal({ isOpen, onClose, onImport }: MjCsvImp
           </code>
         </div>
 
+        <div className="flex items-center gap-3">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".csv,text/csv,text/plain"
+            onChange={handleFileChange}
+            className="hidden"
+          />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="flex items-center gap-2 rounded-lg border border-border-secondary bg-white/[0.03] px-3 py-2 text-sm text-text-secondary transition-colors hover:border-accent/40 hover:text-text-primary"
+          >
+            <Upload className="h-4 w-4" />
+            {fileName ?? tr.payroll.mjCsvImport.chooseFile}
+          </button>
+          <span className="text-xs text-text-tertiary">{tr.payroll.mjCsvImport.orPaste}</span>
+        </div>
+
         <textarea
           value={csv}
-          onChange={(e) => setCsv(e.target.value)}
+          onChange={handleCsvChange}
           placeholder={tr.payroll.mjCsvImport.placeholder}
-          rows={7}
+          rows={6}
           className="w-full rounded-lg border border-border-secondary bg-white/[0.03] px-3 py-2 font-mono text-xs text-text-primary placeholder:text-text-tertiary focus:border-accent/40 focus:outline-none focus:ring-1 focus:ring-accent/20"
         />
 

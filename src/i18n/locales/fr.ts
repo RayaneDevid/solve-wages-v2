@@ -132,9 +132,11 @@ const fr = {
     },
     mjCsvImport: {
       title: 'Importer CSV — Paies MJ',
-      description: 'Collez le CSV des paies MJ (séparateur ;). La ligne d\'en-tête est optionnelle.',
+      description: 'Chargez un fichier .csv ou collez son contenu (séparateur ;). La ligne d\'en-tête est optionnelle.',
       format: '"discord_id";"steam_id";"grade";"moyenne";"grande";"total_animations";"total_heures";"commentaire";"montant"',
       placeholder: '"977526434325217280";"76561...";"mj";"9";"1";"10";"15h11";"...";"20247"',
+      chooseFile: 'Choisir un fichier .csv',
+      orPaste: 'ou collez le contenu ci-dessous',
       preview: 'Aperçu',
       import: 'Importer',
     },
