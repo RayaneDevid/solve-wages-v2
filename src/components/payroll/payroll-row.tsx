@@ -6,7 +6,7 @@ import Badge from '@/components/ui/badge';
 import Modal from '@/components/ui/modal';
 import Button from '@/components/ui/button';
 import { getGradeColor, getPoleCounterFields } from '@/lib/constants';
-import type { Pole } from '@/types';
+import { Pole } from '@/types';
 import type { LocalPayrollEntry } from './payroll-table';
 
 interface PayrollRowProps {
@@ -79,6 +79,14 @@ function getNumericField(entry: LocalPayrollEntry, field: string): number {
   return (entry as unknown as Record<string, unknown>)[field] as number ?? 0;
 }
 
+function getAnimationBreakdownTotal(entry: LocalPayrollEntry, pole: Pole): number {
+  const breakdownTotal = (entry.nb_animations_mj_m ?? 0) + (entry.nb_animations_mj_g ?? 0);
+  if (pole === Pole.ANIMATION && breakdownTotal === 0) {
+    return entry.nb_animations ?? 0;
+  }
+  return breakdownTotal;
+}
+
 export default function PayrollRow({
   entry,
   pole,
@@ -102,6 +110,7 @@ export default function PayrollRow({
   const canDeleteOrAdd = editable && weekStatus !== 'locked';
   const isNew = entry._isNew;
   const isCoordModified = entry.modified_by_coordinator;
+  const usesAnimationBreakdown = pole === Pole.MJ || pole === Pole.ANIMATION;
 
   return (
     <tr
@@ -172,8 +181,8 @@ export default function PayrollRow({
 
       {showTotal && (
         <td className="px-3 py-2.5 text-center text-sm font-medium text-text-primary">
-          {pole === 'mj'
-            ? (entry.nb_animations_mj_m ?? 0) + (entry.nb_animations_mj_g ?? 0)
+          {usesAnimationBreakdown
+            ? getAnimationBreakdownTotal(entry, pole)
             : (entry.tickets_ig ?? 0) + (entry.tickets_discord ?? 0) + (entry.bda_count ?? 0)}
         </td>
       )}

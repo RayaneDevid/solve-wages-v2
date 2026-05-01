@@ -3,9 +3,11 @@ import { Upload } from 'lucide-react';
 import Modal from '@/components/ui/modal';
 import Button from '@/components/ui/button';
 import { t } from '@/i18n';
+import { POLE_LABELS } from '@/lib/constants';
+import { Pole } from '@/types';
 import { Table, TableHeader, TableBody, TableRow, TableCell } from '@/components/ui/table';
 
-export interface MjCsvRow {
+export interface PayrollCsvRow {
   discord_id: string;
   steam_id: string;
   grade: string;
@@ -16,15 +18,30 @@ export interface MjCsvRow {
   montant: number;
 }
 
+export type MjCsvRow = PayrollCsvRow;
+
 interface MjCsvImportModalProps {
   isOpen: boolean;
+  pole: Pole.MJ | Pole.ANIMATION;
   onClose: () => void;
-  onImport: (rows: MjCsvRow[]) => Promise<void>;
+  onImport: (rows: PayrollCsvRow[]) => Promise<void>;
 }
 
-const MJ_GRADE_MAP: Record<string, string> = {
-  mj: 'MJ',
-  mj_senior: 'MJ Senior',
+const GRADE_MAP_BY_POLE: Record<Pole.MJ | Pole.ANIMATION, Record<string, string>> = {
+  [Pole.MJ]: {
+    mj: 'MJ',
+    mj_senior: 'MJ Senior',
+    resp_mj: 'Responsable MJ',
+    responsable_mj: 'Responsable MJ',
+  },
+  [Pole.ANIMATION]: {
+    animateur: 'Animateur',
+    animateur_senior: 'Animateur Senior',
+    animation: 'Animateur',
+    animation_senior: 'Animateur Senior',
+    resp_animation: 'Responsable Animation',
+    responsable_animation: 'Responsable Animation',
+  },
 };
 
 function parseCsvLine(line: string): string[] {
@@ -34,22 +51,34 @@ function parseCsvLine(line: string): string[] {
   for (let i = 0; i < line.length; i++) {
     const ch = line[i];
     if (ch === '"') {
-      inQuote = !inQuote;
+      if (inQuote && line[i + 1] === '"') {
+        current += '"';
+        i++;
+      } else {
+        inQuote = !inQuote;
+      }
     } else if (ch === ';' && !inQuote) {
-      result.push(current);
+      result.push(current.trim());
       current = '';
     } else {
       current += ch;
     }
   }
-  result.push(current);
+  result.push(current.trim());
   return result;
 }
 
 const EXPECTED_COLS = 9;
 
-function parseMjCsv(raw: string): { rows: MjCsvRow[]; error: string | null } {
+function normalizeGrade(pole: Pole.MJ | Pole.ANIMATION, gradeCode: string): string {
+  const cleaned = gradeCode.trim();
+  const key = cleaned.toLowerCase();
+  return GRADE_MAP_BY_POLE[pole][key] ?? cleaned;
+}
+
+function parsePayrollCsv(raw: string, pole: Pole.MJ | Pole.ANIMATION): { rows: PayrollCsvRow[]; error: string | null } {
   const lines = raw
+    .replace(/^\uFEFF/, '')
     .split('\n')
     .map((l) => l.trim())
     .filter((l) => l.length > 0);
@@ -65,7 +94,7 @@ function parseMjCsv(raw: string): { rows: MjCsvRow[]; error: string | null } {
 
   if (dataLines.length === 0) return { rows: [], error: null };
 
-  const rows: MjCsvRow[] = [];
+  const rows: PayrollCsvRow[] = [];
 
   for (let i = 0; i < dataLines.length; i++) {
     const cells = parseCsvLine(dataLines[i]);
@@ -82,7 +111,7 @@ function parseMjCsv(raw: string): { rows: MjCsvRow[]; error: string | null } {
     rows.push({
       discord_id,
       steam_id,
-      grade: MJ_GRADE_MAP[gradeCode] ?? gradeCode,
+      grade: normalizeGrade(pole, gradeCode),
       moyenne: parseInt(moyenneStr) || 0,
       grande: parseInt(grandeStr) || 0,
       heures,
@@ -94,14 +123,20 @@ function parseMjCsv(raw: string): { rows: MjCsvRow[]; error: string | null } {
   return { rows, error: null };
 }
 
-export default function MjCsvImportModal({ isOpen, onClose, onImport }: MjCsvImportModalProps) {
+export default function PayrollCsvImportModal({ isOpen, pole, onClose, onImport }: MjCsvImportModalProps) {
   const tr = t();
   const [csv, setCsv] = useState('');
   const [loading, setLoading] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const modalTitle = pole === Pole.ANIMATION
+    ? tr.payroll.mjCsvImport.titles.animation
+    : tr.payroll.mjCsvImport.titles.mj;
+  const placeholder = pole === Pole.ANIMATION
+    ? tr.payroll.mjCsvImport.placeholders.animation
+    : tr.payroll.mjCsvImport.placeholders.mj;
 
-  const { rows, error } = useMemo(() => parseMjCsv(csv), [csv]);
+  const { rows, error } = useMemo(() => parsePayrollCsv(csv, pole), [csv, pole]);
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -134,10 +169,10 @@ export default function MjCsvImportModal({ isOpen, onClose, onImport }: MjCsvImp
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={tr.payroll.mjCsvImport.title} className="max-w-[820px]">
+    <Modal isOpen={isOpen} onClose={onClose} title={modalTitle} className="max-w-[820px]">
       <div className="flex flex-col gap-4">
         <div className="text-sm text-text-secondary">
-          <p>{tr.payroll.mjCsvImport.description}</p>
+          <p>{tr.payroll.mjCsvImport.description.replace('{pole}', POLE_LABELS[pole])}</p>
           <code className="mt-1 block rounded bg-white/[0.04] px-2 py-1 text-[11px] text-text-tertiary">
             {tr.payroll.mjCsvImport.format}
           </code>
@@ -165,7 +200,7 @@ export default function MjCsvImportModal({ isOpen, onClose, onImport }: MjCsvImp
         <textarea
           value={csv}
           onChange={handleCsvChange}
-          placeholder={tr.payroll.mjCsvImport.placeholder}
+          placeholder={placeholder}
           rows={6}
           className="w-full rounded-lg border border-border-secondary bg-white/[0.03] px-3 py-2 font-mono text-xs text-text-primary placeholder:text-text-tertiary focus:border-accent/40 focus:outline-none focus:ring-1 focus:ring-accent/20"
         />

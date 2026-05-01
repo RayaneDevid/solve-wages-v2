@@ -12,7 +12,7 @@ import SearchableSelect from '@/components/ui/searchable-select';
 import Spinner from '@/components/ui/spinner';
 import WeekStatusBadge from '@/components/payroll/week-status-badge';
 import PayrollTable, { type LocalPayrollEntry } from '@/components/payroll/payroll-table';
-import MjCsvImportModal, { type MjCsvRow } from '@/components/payroll/mj-csv-import-modal';
+import PayrollCsvImportModal, { type PayrollCsvRow } from '@/components/payroll/mj-csv-import-modal';
 import { bulkImportMembers as bulkImportMembersApi } from '@/api/members.api';
 import { showToast } from '@/components/ui/show-toast';
 
@@ -102,7 +102,7 @@ export default function PayrollEntryPage() {
     () => serverEntries?.map(toLocalEntry) ?? [],
   );
   const [hasLocalChanges, setHasLocalChanges] = useState(false);
-  const [mjCsvImportOpen, setMjCsvImportOpen] = useState(false);
+  const [payrollCsvImportOpen, setPayrollCsvImportOpen] = useState(false);
 
   const lockState = usePayrollLock(editable ? week?.id : undefined, editable ? selectedPole : undefined);
   const isBlocked = lockState.status === 'blocked';
@@ -168,17 +168,23 @@ export default function PayrollEntryPage() {
     }
   }
 
-  const MJ_SUB_FIELDS = ['nb_animations_mj_m', 'nb_animations_mj_g'] as const;
+  const ANIMATION_BREAKDOWN_FIELDS = ['nb_animations_mj_m', 'nb_animations_mj_g'] as const;
+  const canImportStructuredCsv = selectedPole === Pole.MJ || selectedPole === Pole.ANIMATION;
 
   const handleUpdate = useCallback((discordId: string, field: string, value: string | number | boolean) => {
     setLocalEntries((prev) =>
       prev.map((e) => {
         if (e.discord_id !== discordId) return e;
         const updated = { ...e, [field]: value, _dirty: true };
-        if (MJ_SUB_FIELDS.includes(field as typeof MJ_SUB_FIELDS[number])) {
-          updated.nb_animations_mj =
+        if (ANIMATION_BREAKDOWN_FIELDS.includes(field as typeof ANIMATION_BREAKDOWN_FIELDS[number])) {
+          const total =
             (field === 'nb_animations_mj_m' ? (value as number) : (updated.nb_animations_mj_m ?? 0)) +
             (field === 'nb_animations_mj_g' ? (value as number) : (updated.nb_animations_mj_g ?? 0));
+          if (selectedPoleRef.current === Pole.ANIMATION) {
+            updated.nb_animations = total;
+          } else {
+            updated.nb_animations_mj = total;
+          }
         }
         return updated;
       }),
@@ -204,7 +210,10 @@ export default function PayrollEntryPage() {
     setHasLocalChanges(true);
   }
 
-  async function handleMjCsvImport(rows: MjCsvRow[]): Promise<void> {
+  async function handlePayrollCsvImport(rows: PayrollCsvRow[]): Promise<void> {
+    const importPole = selectedPoleRef.current;
+    if (importPole !== Pole.MJ && importPole !== Pole.ANIMATION) return;
+
     // Detect new discord_ids absent from current entries
     const existingIds = new Set(localEntries.map((e) => e.discord_id));
     const newRows = rows.filter((r) => !existingIds.has(r.discord_id));
@@ -213,7 +222,7 @@ export default function PayrollEntryPage() {
     if (newRows.length > 0) {
       try {
         await bulkImportMembersApi({
-          pole: Pole.MJ,
+          pole: importPole,
           members: newRows.map((r) => ({
             discord_username: r.discord_id,
             discord_id: r.discord_id,
@@ -222,7 +231,7 @@ export default function PayrollEntryPage() {
           })),
         });
       } catch {
-        showToast('Erreur lors de la création des membres MJ', 'error');
+        showToast(`Erreur lors de la création des membres ${POLE_LABELS[importPole]}`, 'error');
         return;
       }
     }
@@ -234,15 +243,16 @@ export default function PayrollEntryPage() {
       for (const row of rows) {
         const total = row.moyenne + row.grande;
         const idx = idxById.get(row.discord_id);
+        const totalField = importPole === Pole.ANIMATION ? 'nb_animations' : 'nb_animations_mj';
 
         if (idx !== undefined) {
           updated[idx] = {
             ...updated[idx],
             steam_id: row.steam_id || updated[idx].steam_id,
             grade: row.grade,
+            [totalField]: total,
             nb_animations_mj_m: row.moyenne,
             nb_animations_mj_g: row.grande,
-            nb_animations_mj: total,
             nb_heures_mj: row.heures,
             commentaire: row.commentaire,
             montant: row.montant,
@@ -253,7 +263,7 @@ export default function PayrollEntryPage() {
           updated.push({
             id: undefined,
             staff_id: null,
-            pole: selectedPoleRef.current,
+            pole: importPole,
             discord_username: row.discord_id,
             discord_id: row.discord_id,
             steam_id: row.steam_id || null,
@@ -261,8 +271,8 @@ export default function PayrollEntryPage() {
             tickets_ig: null,
             tickets_discord: null,
             bda_count: null,
-            nb_animations: null,
-            nb_animations_mj: total,
+            nb_animations: importPole === Pole.ANIMATION ? total : null,
+            nb_animations_mj: importPole === Pole.MJ ? total : null,
             nb_animations_mj_p: null,
             nb_animations_mj_m: row.moyenne,
             nb_animations_mj_g: row.grande,
@@ -473,8 +483,8 @@ export default function PayrollEntryPage() {
                 {tr.payroll.actions.markZeroInactive} ({zeroActiveCount})
               </Button>
             )}
-            {weekStatus === 'open' && selectedPole === Pole.MJ && (
-              <Button size="sm" variant="secondary" onClick={() => setMjCsvImportOpen(true)}>
+            {weekStatus === 'open' && canImportStructuredCsv && (
+              <Button size="sm" variant="secondary" onClick={() => setPayrollCsvImportOpen(true)}>
                 <Upload className="h-4 w-4" />
                 {tr.payroll.actions.importCsv}
               </Button>
@@ -536,10 +546,11 @@ export default function PayrollEntryPage() {
         </>
       )}
 
-      <MjCsvImportModal
-        isOpen={mjCsvImportOpen}
-        onClose={() => setMjCsvImportOpen(false)}
-        onImport={handleMjCsvImport}
+      <PayrollCsvImportModal
+        isOpen={payrollCsvImportOpen}
+        pole={selectedPole === Pole.ANIMATION ? Pole.ANIMATION : Pole.MJ}
+        onClose={() => setPayrollCsvImportOpen(false)}
+        onImport={handlePayrollCsvImport}
       />
     </div>
   );

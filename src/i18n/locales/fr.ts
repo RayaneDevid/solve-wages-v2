@@ -131,10 +131,18 @@ const fr = {
       import: 'Importer',
     },
     mjCsvImport: {
-      title: 'Importer CSV — Paies MJ',
-      description: 'Chargez un fichier .csv ou collez son contenu (séparateur ;). La ligne d\'en-tête est optionnelle.',
+      title: 'Importer CSV — Paies',
+      titles: {
+        mj: 'Importer CSV — Paies MJ',
+        animation: 'Importer CSV — Paies Animation',
+      },
+      description: 'Chargez un fichier .csv pour {pole} ou collez son contenu (séparateur ;). La ligne d\'en-tête est optionnelle.',
       format: '"discord_id";"steam_id";"grade";"moyenne";"grande";"total_animations";"total_heures";"commentaire";"montant"',
       placeholder: '"977526434325217280";"76561...";"mj";"9";"1";"10";"15h11";"...";"20247"',
+      placeholders: {
+        mj: '"977526434325217280";"76561...";"mj";"9";"1";"10";"15h11";"...";"20247"',
+        animation: '"977526434325217280";"76561...";"animateur";"9";"1";"10";"15h11";"...";"20247"',
+      },
       chooseFile: 'Choisir un fichier .csv',
       orPaste: 'ou collez le contenu ci-dessous',
       preview: 'Aperçu',

@@ -431,7 +431,10 @@ const POLE_COUNTER_FIELDS: Partial<Record<Pole, { field: string; label: string }
     { field: 'tickets_discord', label: 'ticketsDiscord' },
     { field: 'bda_count', label: 'bdaCount' },
   ],
-  animation: [{ field: 'nb_animations', label: 'nbAnimations' }],
+  animation: [
+    { field: 'nb_animations_mj_m', label: 'nbAnimationsMjM' },
+    { field: 'nb_animations_mj_g', label: 'nbAnimationsMjG' },
+  ],
   mj: [
     { field: 'nb_animations_mj_m', label: 'nbAnimationsMjM' },
     { field: 'nb_animations_mj_g', label: 'nbAnimationsMjG' },
