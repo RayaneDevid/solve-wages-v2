@@ -181,10 +181,11 @@ export default function PayrollRow({
       {showHeures && (
         <td className="px-3 py-2.5 text-center text-sm">
           <InlineInput
-            type="number"
-            value={entry.nb_heures_mj ?? 0}
-            onChange={(v) => onUpdate(entry.discord_id, 'nb_heures_mj', parseInt(v) || 0)}
+            type="text"
+            value={entry.nb_heures_mj ?? ''}
+            onChange={(v) => onUpdate(entry.discord_id, 'nb_heures_mj', v)}
             disabled={!canEditPayFields}
+            className="w-20"
           />
         </td>
       )}

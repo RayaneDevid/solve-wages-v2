@@ -36,6 +36,7 @@ function toLocalEntry(entry: PayrollEntry): LocalPayrollEntry {
     nb_animations_mj_p: entry.nb_animations_mj_p,
     nb_animations_mj_m: entry.nb_animations_mj_m,
     nb_animations_mj_g: entry.nb_animations_mj_g,
+    nb_heures_mj: entry.nb_heures_mj,
     nb_candidatures_ecrites: entry.nb_candidatures_ecrites,
     nb_oraux: entry.nb_oraux,
     commentaire: entry.commentaire,

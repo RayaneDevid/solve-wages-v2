@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import { Send, Save, EyeOff, Eye, Lock } from 'lucide-react';
+import { Send, Save, EyeOff, Eye, Lock, Upload } from 'lucide-react';
 import { usePayrollLock } from '@/hooks/use-payroll-lock';
 import { t } from '@/i18n';
 import { Role, Pole, type PayrollEntry, type PayrollWeek, type PayrollSubmission } from '@/types';
@@ -12,6 +12,8 @@ import SearchableSelect from '@/components/ui/searchable-select';
 import Spinner from '@/components/ui/spinner';
 import WeekStatusBadge from '@/components/payroll/week-status-badge';
 import PayrollTable, { type LocalPayrollEntry } from '@/components/payroll/payroll-table';
+import MjCsvImportModal, { type MjCsvRow } from '@/components/payroll/mj-csv-import-modal';
+import { bulkImportMembers as bulkImportMembersApi } from '@/api/members.api';
 import { showToast } from '@/components/ui/show-toast';
 
 function toLocalEntry(entry: PayrollEntry): LocalPayrollEntry {
@@ -100,6 +102,7 @@ export default function PayrollEntryPage() {
     () => serverEntries?.map(toLocalEntry) ?? [],
   );
   const [hasLocalChanges, setHasLocalChanges] = useState(false);
+  const [mjCsvImportOpen, setMjCsvImportOpen] = useState(false);
 
   const lockState = usePayrollLock(editable ? week?.id : undefined, editable ? selectedPole : undefined);
   const isBlocked = lockState.status === 'blocked';
@@ -199,6 +202,95 @@ export default function PayrollEntryPage() {
       prev.map((e) => (e.is_inactive ? { ...e, is_inactive: false, _dirty: true } : e)),
     );
     setHasLocalChanges(true);
+  }
+
+  async function handleMjCsvImport(rows: MjCsvRow[]): Promise<void> {
+    // Detect new discord_ids absent from current entries
+    const existingIds = new Set(localEntries.map((e) => e.discord_id));
+    const newRows = rows.filter((r) => !existingIds.has(r.discord_id));
+
+    // Create missing pole_members first (direct API call to avoid cache invalidation)
+    if (newRows.length > 0) {
+      try {
+        await bulkImportMembersApi({
+          pole: Pole.MJ,
+          members: newRows.map((r) => ({
+            discord_username: r.discord_id,
+            discord_id: r.discord_id,
+            steam_id: r.steam_id || undefined,
+            grade: r.grade,
+          })),
+        });
+      } catch {
+        showToast('Erreur lors de la création des membres MJ', 'error');
+        return;
+      }
+    }
+
+    setLocalEntries((prev) => {
+      const updated = [...prev];
+      const idxById = new Map(updated.map((e, i) => [e.discord_id, i]));
+
+      for (const row of rows) {
+        const total = row.moyenne + row.grande;
+        const idx = idxById.get(row.discord_id);
+
+        if (idx !== undefined) {
+          updated[idx] = {
+            ...updated[idx],
+            steam_id: row.steam_id || updated[idx].steam_id,
+            grade: row.grade,
+            nb_animations_mj_m: row.moyenne,
+            nb_animations_mj_g: row.grande,
+            nb_animations_mj: total,
+            nb_heures_mj: row.heures,
+            commentaire: row.commentaire,
+            montant: row.montant,
+            is_inactive: row.montant === 0,
+            _dirty: true,
+          };
+        } else {
+          updated.push({
+            id: undefined,
+            staff_id: null,
+            pole: selectedPoleRef.current,
+            discord_username: row.discord_id,
+            discord_id: row.discord_id,
+            steam_id: row.steam_id || null,
+            grade: row.grade,
+            tickets_ig: null,
+            tickets_discord: null,
+            bda_count: null,
+            nb_animations: null,
+            nb_animations_mj: total,
+            nb_animations_mj_p: null,
+            nb_animations_mj_m: row.moyenne,
+            nb_animations_mj_g: row.grande,
+            nb_heures_mj: row.heures,
+            nb_candidatures_ecrites: null,
+            nb_oraux: null,
+            commentaire: row.commentaire,
+            presence_reunion: false,
+            montant: row.montant,
+            is_inactive: row.montant === 0,
+            confirmed_by_coordinator: false,
+            confirmed_at: null,
+            modified_by_coordinator: false,
+            coordinator_modified_at: null,
+            _isNew: true,
+            _dirty: true,
+          });
+        }
+      }
+
+      return updated;
+    });
+    setHasLocalChanges(true);
+
+    const msg = newRows.length > 0
+      ? `${rows.length} entrées importées, ${newRows.length} membre(s) créé(s)`
+      : `${rows.length} entrées importées`;
+    showToast(msg);
   }
 
   const handleDelete = useCallback(async (discordId: string) => {
@@ -381,6 +473,12 @@ export default function PayrollEntryPage() {
                 {tr.payroll.actions.markZeroInactive} ({zeroActiveCount})
               </Button>
             )}
+            {weekStatus === 'open' && selectedPole === Pole.MJ && (
+              <Button size="sm" variant="secondary" onClick={() => setMjCsvImportOpen(true)}>
+                <Upload className="h-4 w-4" />
+                {tr.payroll.actions.importCsv}
+              </Button>
+            )}
             {weekStatus === 'open' && (
               <Button
                 size="sm"
@@ -437,6 +535,12 @@ export default function PayrollEntryPage() {
           )}
         </>
       )}
+
+      <MjCsvImportModal
+        isOpen={mjCsvImportOpen}
+        onClose={() => setMjCsvImportOpen(false)}
+        onImport={handleMjCsvImport}
+      />
     </div>
   );
 }
