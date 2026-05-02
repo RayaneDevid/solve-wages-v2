@@ -5,6 +5,48 @@ import { getUser } from '../_shared/auth.ts';
 import { jsonResponse, errorResponse } from '../_shared/response.ts';
 import { getAllowedPoles, canAccessPole, isAdmin } from '../_shared/roles.ts';
 
+const INTEGER_ENTRY_FIELDS = [
+  'tickets_ig',
+  'tickets_discord',
+  'bda_count',
+  'nb_animations',
+  'nb_animations_mj',
+  'nb_animations_mj_p',
+  'nb_animations_mj_m',
+  'nb_animations_mj_g',
+  'nb_candidatures_ecrites',
+  'nb_oraux',
+  'montant',
+] as const;
+
+function toNullableInteger(value: unknown, field: string, discordId: unknown): { value: number | null; error: string | null } {
+  if (value === null || value === undefined || value === '') {
+    return { value: null, error: null };
+  }
+
+  if (typeof value === 'number' && Number.isInteger(value)) {
+    return { value, error: null };
+  }
+
+  if (typeof value === 'string') {
+    const cleaned = value.trim().replace(/\s/g, '');
+    if (/^-?\d+$/.test(cleaned)) {
+      return { value: Number.parseInt(cleaned, 10), error: null };
+    }
+  }
+
+  return {
+    value: null,
+    error: `Le champ ${field} doit être un entier pour ${String(discordId ?? 'une entrée')}`,
+  };
+}
+
+function toNullableText(value: unknown): string | null {
+  if (value === null || value === undefined) return null;
+  const text = String(value).trim();
+  return text.length > 0 ? text : null;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -262,7 +304,9 @@ serve(async (req) => {
         };
       }
 
-      const rowsToUpsert = entries.map((entry: Record<string, unknown>) => {
+      const rowsToUpsert: Record<string, unknown>[] = [];
+
+      for (const entry of entries as Record<string, unknown>[]) {
         const key = `${entry.discord_id}:${pole}`;
         const existing = existingByKey[key];
 
@@ -274,20 +318,9 @@ serve(async (req) => {
           discord_id: entry.discord_id,
           steam_id: entry.steam_id ?? null,
           grade: entry.grade,
-          tickets_ig: entry.tickets_ig ?? null,
-          tickets_discord: entry.tickets_discord ?? null,
-          bda_count: entry.bda_count ?? null,
-          nb_animations: entry.nb_animations ?? null,
-          nb_animations_mj: entry.nb_animations_mj ?? null,
-          nb_animations_mj_p: entry.nb_animations_mj_p ?? null,
-          nb_animations_mj_m: entry.nb_animations_mj_m ?? null,
-          nb_animations_mj_g: entry.nb_animations_mj_g ?? null,
-          nb_heures_mj: entry.nb_heures_mj ?? null,
-          nb_candidatures_ecrites: entry.nb_candidatures_ecrites ?? null,
-          nb_oraux: entry.nb_oraux ?? null,
-          commentaire: entry.commentaire ?? null,
+          nb_heures_mj: toNullableText(entry.nb_heures_mj),
+          commentaire: toNullableText(entry.commentaire),
           presence_reunion: entry.presence_reunion ?? false,
-          montant: entry.montant ?? 0,
           is_inactive: entry.is_inactive ?? false,
           filled_by_id: user.id,
           staff_id: discordToStaffId[entry.discord_id as string] ?? null,
@@ -295,13 +328,21 @@ serve(async (req) => {
           confirmed_at: existing?.confirmed_at ?? null,
         };
 
+        for (const field of INTEGER_ENTRY_FIELDS) {
+          const parsed = toNullableInteger(entry[field], field, entry.discord_id);
+          if (parsed.error) {
+            return errorResponse(parsed.error, 400);
+          }
+          row[field] = field === 'montant' ? (parsed.value ?? 0) : parsed.value;
+        }
+
         if (isCoordinateur) {
           row.modified_by_coordinator = true;
           row.coordinator_modified_at = now;
         }
 
-        return row;
-      });
+        rowsToUpsert.push(row);
+      }
 
       const { data: freshWeek } = await supabase
         .from('payroll_weeks')

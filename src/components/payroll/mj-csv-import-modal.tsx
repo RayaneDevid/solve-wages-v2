@@ -76,6 +76,15 @@ function normalizeGrade(pole: Pole.MJ | Pole.ANIMATION, gradeCode: string): stri
   return GRADE_MAP_BY_POLE[pole][key] ?? cleaned;
 }
 
+function parseIntegerCell(value: string, line: number, label: string): { value: number; error: string | null } {
+  const cleaned = value.trim().replace(/\s/g, '');
+  if (cleaned === '') return { value: 0, error: null };
+  if (!/^\d+$/.test(cleaned)) {
+    return { value: 0, error: `Ligne ${line} : ${label} doit être un nombre entier` };
+  }
+  return { value: Number.parseInt(cleaned, 10), error: null };
+}
+
 function parsePayrollCsv(raw: string, pole: Pole.MJ | Pole.ANIMATION): { rows: PayrollCsvRow[]; error: string | null } {
   const lines = raw
     .replace(/^\uFEFF/, '')
@@ -108,15 +117,25 @@ function parsePayrollCsv(raw: string, pole: Pole.MJ | Pole.ANIMATION): { rows: P
       return { rows: [], error: `Ligne ${i + 1} : discord_id manquant` };
     }
 
+    const lineNumber = i + 1;
+    const moyenne = parseIntegerCell(moyenneStr, lineNumber, 'moyenne');
+    if (moyenne.error) return { rows: [], error: moyenne.error };
+
+    const grande = parseIntegerCell(grandeStr, lineNumber, 'grande');
+    if (grande.error) return { rows: [], error: grande.error };
+
+    const montant = parseIntegerCell(montantStr, lineNumber, 'montant');
+    if (montant.error) return { rows: [], error: montant.error };
+
     rows.push({
       discord_id,
       steam_id,
       grade: normalizeGrade(pole, gradeCode),
-      moyenne: parseInt(moyenneStr) || 0,
-      grande: parseInt(grandeStr) || 0,
+      moyenne: moyenne.value,
+      grande: grande.value,
       heures,
       commentaire,
-      montant: parseInt(montantStr) || 0,
+      montant: montant.value,
     });
   }
 
