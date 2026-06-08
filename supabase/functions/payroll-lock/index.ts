@@ -5,8 +5,9 @@ import { getUser } from '../_shared/auth.ts';
 import { jsonResponse, errorResponse } from '../_shared/response.ts';
 import { canAccessPole } from '../_shared/roles.ts';
 
-// Lock expires after 30s without heartbeat
-const LOCK_TTL_SECONDS = 30;
+// Lock expires after 2 minutes without heartbeat.
+const LOCK_TTL_SECONDS = 120;
+const LOCK_COLUMNS = 'id, payroll_week_id, pole, user_id, username, locked_at';
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -36,7 +37,7 @@ serve(async (req) => {
 
       const { data: lock } = await supabase
         .from('payroll_locks')
-        .select('*')
+        .select(LOCK_COLUMNS)
         .eq('payroll_week_id', weekId)
         .eq('pole', pole)
         .maybeSingle();
@@ -68,7 +69,7 @@ serve(async (req) => {
 
       const { data: existing } = await supabase
         .from('payroll_locks')
-        .select('*')
+        .select(LOCK_COLUMNS)
         .eq('payroll_week_id', weekId)
         .eq('pole', pole)
         .maybeSingle();
@@ -84,7 +85,7 @@ serve(async (req) => {
           .from('payroll_locks')
           .update({ user_id: user.id, username: user.username ?? 'Inconnu', locked_at: new Date().toISOString() })
           .eq('id', existing.id)
-          .select()
+          .select(LOCK_COLUMNS)
           .single();
 
         if (error) return errorResponse(error.message, 500);
@@ -99,7 +100,7 @@ serve(async (req) => {
           user_id: user.id,
           username: user.username ?? 'Inconnu',
         })
-        .select()
+        .select(LOCK_COLUMNS)
         .single();
 
       if (error) {

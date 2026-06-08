@@ -217,7 +217,7 @@ serve(async (req) => {
 
       const { data: week, error: weekError } = await supabase
         .from('payroll_weeks')
-        .select('*')
+        .select('status')
         .eq('id', weekId)
         .maybeSingle();
 
@@ -241,7 +241,7 @@ serve(async (req) => {
 
       const { data: existingSubmission, error: subFetchError } = await supabase
         .from('payroll_submissions')
-        .select('*')
+        .select('id')
         .eq('payroll_week_id', weekId)
         .eq('pole', pole)
         .maybeSingle();
@@ -263,7 +263,7 @@ serve(async (req) => {
             pole,
             status: 'draft',
           })
-          .select()
+          .select('id')
           .single();
 
         if (subInsertError) {
@@ -354,16 +354,15 @@ serve(async (req) => {
         return errorResponse('Semaine verrouillée ou fermée, modification impossible', 400);
       }
 
-      const { data: upserted, error: upsertError } = await supabase
+      const { error: upsertError } = await supabase
         .from('payroll_entries')
-        .upsert(rowsToUpsert, { onConflict: 'payroll_week_id,discord_id,pole' })
-        .select();
+        .upsert(rowsToUpsert, { onConflict: 'payroll_week_id,discord_id,pole' });
 
       if (upsertError) {
         return errorResponse(upsertError.message, 500);
       }
 
-      return jsonResponse(upserted ?? []);
+      return jsonResponse([]);
     }
 
     if (req.method === 'PATCH') {

@@ -48,7 +48,7 @@ export async function getUser(req: Request): Promise<AppUser> {
   // Find app user by supabase_auth_id (excluding soft-deleted users)
   const { data: appUser, error: userError } = await supabase
     .from('users')
-    .select('*')
+    .select('id, supabase_auth_id, discord_id, username, avatar_url, role, roles, is_active, last_login_at, created_at, updated_at')
     .eq('supabase_auth_id', authUser.id)
     .is('deleted_at', null)
     .single();

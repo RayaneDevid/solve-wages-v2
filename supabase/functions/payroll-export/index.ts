@@ -108,7 +108,7 @@ serve(async (req) => {
     // Fetch the week
     const { data: week, error: weekError } = await supabase
       .from('payroll_weeks')
-      .select('*')
+      .select('week_start, week_end')
       .eq('id', weekId)
       .maybeSingle();
 
@@ -123,7 +123,7 @@ serve(async (req) => {
     // Fetch all entries for this week
     const { data: entries, error: entriesError } = await supabase
       .from('payroll_entries')
-      .select('*')
+      .select('pole, grade, discord_username, discord_id, steam_id, tickets_ig, tickets_discord, bda_count, nb_animations, nb_animations_mj, nb_candidatures_ecrites, nb_oraux, commentaire, presence_reunion, montant')
       .eq('payroll_week_id', weekId)
       .order('pole', { ascending: true })
       .order('discord_username', { ascending: true });

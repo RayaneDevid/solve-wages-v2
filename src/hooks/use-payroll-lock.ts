@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { acquireLock, releaseLock, checkLock } from '@/api/payroll-lock.api';
 
-const HEARTBEAT_INTERVAL = 15_000; // 15s
-const POLL_INTERVAL = 5_000;       // 5s
+const HEARTBEAT_INTERVAL = 45_000; // 45s
+const POLL_INTERVAL = 15_000;      // 15s
 
 export type LockState =
   | { status: 'idle' }
@@ -13,9 +13,9 @@ export type LockState =
 
 /**
  * Acquires a payroll lock for the given week+pole.
- * Sends a heartbeat every 15s to keep the lock alive.
+ * Sends a heartbeat to keep the lock alive.
  * Releases the lock on unmount or when weekId/pole changes.
- * Also polls every 5s to detect if we were kicked (shouldn't happen but safety).
+ * Also polls occasionally to detect if we were kicked (shouldn't happen but safety).
  */
 export function usePayrollLock(weekId: string | undefined, pole: string | undefined) {
   const [lockState, setLockState] = useState<LockState>({ status: 'idle' });
@@ -87,8 +87,8 @@ export function usePayrollLock(weekId: string | undefined, pole: string | undefi
           heartbeatFailures = 0;
         } catch {
           heartbeatFailures++;
-          // After 5 consecutive failures (~75s) the lock has likely expired
-          if (heartbeatFailures >= 5) {
+          // After 3 consecutive failures the lock has likely expired
+          if (heartbeatFailures >= 3) {
             stopIntervals();
             ownedRef.current = false;
             setLockState({ status: 'error' });

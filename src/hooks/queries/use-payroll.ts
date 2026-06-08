@@ -46,9 +46,9 @@ export function useSaveEntries() {
   return useMutation({
     mutationFn: (payload: { week_id: string; pole: string; entries: Partial<PayrollEntry>[] }) =>
       savePayrollEntries(payload),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['payroll-entries'] });
-      queryClient.invalidateQueries({ queryKey: ['payroll-weeks'] });
+    onSuccess: (_data, payload) => {
+      queryClient.invalidateQueries({ queryKey: ['payroll-entries', payload.week_id] });
+      queryClient.invalidateQueries({ queryKey: ['payroll-weeks', 'current'] });
     },
   });
 }
@@ -58,9 +58,9 @@ export function useUpdateEntries() {
   return useMutation({
     mutationFn: (payload: { week_id: string; pole: string; entries: Partial<PayrollEntry>[] }) =>
       updatePayrollEntries(payload),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['payroll-entries'] });
-      queryClient.invalidateQueries({ queryKey: ['payroll-weeks'] });
+    onSuccess: (_data, payload) => {
+      queryClient.invalidateQueries({ queryKey: ['payroll-entries', payload.week_id] });
+      queryClient.invalidateQueries({ queryKey: ['payroll-weeks', 'current'] });
     },
   });
 }
@@ -69,9 +69,9 @@ export function useSubmitPayroll() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (payload: { week_id: string; pole: string }) => submitPayroll(payload),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['payroll-entries'] });
-      queryClient.invalidateQueries({ queryKey: ['payroll-weeks'] });
+    onSuccess: (_data, payload) => {
+      queryClient.invalidateQueries({ queryKey: ['payroll-entries', payload.week_id] });
+      queryClient.invalidateQueries({ queryKey: ['payroll-weeks', 'current'] });
     },
   });
 }
