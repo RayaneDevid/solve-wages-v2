@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import { Download, Copy, CheckCircle2, Gift } from 'lucide-react';
 import { t } from '@/i18n';
-import { Pole, type PayrollEntry, type PayrollSubmission, type PayrollWeek } from '@/types';
+import { Pole, type PayrollEntry, type PayrollSubmission, type PayrollSubmissionLog, type PayrollWeek } from '@/types';
 import { formatShortDate, isCoordinateur } from '@/lib/utils';
 import { POLE_LABELS } from '@/lib/constants';
 import { useAuthStore } from '@/stores/auth.store';
@@ -12,6 +12,7 @@ import {
   useConfirmEntry,
   useBulkConfirmEntries,
   useExportPayroll,
+  usePayrollSubmissionLogs,
 } from '@/hooks/queries/use-payroll';
 import { usePrimes } from '@/hooks/queries/use-primes';
 import Button from '@/components/ui/button';
@@ -23,6 +24,7 @@ import WeekStatusBadge from '@/components/payroll/week-status-badge';
 import SubmissionStatusBadge from '@/components/payroll/submission-status-badge';
 import PayrollTable, { type LocalPayrollEntry } from '@/components/payroll/payroll-table';
 import PayrollSummary from '@/components/payroll/payroll-summary';
+import SubmissionLogList from '@/components/payroll/submission-log-list';
 import { showToast } from '@/components/ui/show-toast';
 
 const ALL_POLES: Pole[] = Object.values(Pole);
@@ -123,6 +125,7 @@ export default function GlobalViewPage() {
 
   const { data: week, isLoading: weekLoading } = useCurrentWeek();
   const { data: allEntries, isLoading: entriesLoading } = usePayrollEntries(week?.id);
+  const { data: submissionLogs } = usePayrollSubmissionLogs(week?.id);
   const { data: primesData } = usePrimes(week?.id);
   const saveEntries = useSaveEntries();
   const confirmEntry = useConfirmEntry();
@@ -132,6 +135,14 @@ export default function GlobalViewPage() {
   const submissions = (week as PayrollWeek & { submissions?: PayrollSubmission[] })?.submissions ?? [];
 
   const entries = useMemo(() => allEntries?.map(toLocalEntry) ?? [], [allEntries]);
+  const logsByPole = useMemo(() => {
+    const result = new Map<Pole, PayrollSubmissionLog[]>();
+    for (const log of (submissionLogs ?? [])) {
+      if (!result.has(log.pole)) result.set(log.pole, []);
+      result.get(log.pole)!.push(log);
+    }
+    return result;
+  }, [submissionLogs]);
 
   const polesToShow = filterPole === 'all' ? ALL_POLES : [filterPole as Pole];
 
@@ -391,6 +402,7 @@ export default function GlobalViewPage() {
                   onConfirm={handleConfirm}
                   onEdit={isCoord && week.status !== 'locked' ? setEditEntry : undefined}
                 />
+                <SubmissionLogList logs={logsByPole.get(pole) ?? []} />
               </div>
             );
           })}
