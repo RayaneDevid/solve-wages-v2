@@ -6,6 +6,7 @@ import {
   savePayrollEntries,
   updatePayrollEntries,
   deletePayrollEntry,
+  getPayrollSubmissionLogs,
   submitPayroll,
   controlPayroll,
   confirmPayrollEntry,
@@ -39,6 +40,14 @@ export function usePayrollEntries(weekId: string | undefined, pole?: string) {
   });
 }
 
+export function usePayrollSubmissionLogs(weekId: string | undefined, pole?: string) {
+  return useQuery({
+    queryKey: ['payroll-submission-logs', weekId, pole],
+    queryFn: () => getPayrollSubmissionLogs(weekId!, pole),
+    enabled: !!weekId,
+  });
+}
+
 // ── Mutations ──
 
 export function useSaveEntries() {
@@ -61,6 +70,7 @@ export function useUpdateEntries() {
     onSuccess: (_data, payload) => {
       queryClient.invalidateQueries({ queryKey: ['payroll-entries', payload.week_id] });
       queryClient.invalidateQueries({ queryKey: ['payroll-weeks', 'current'] });
+      queryClient.invalidateQueries({ queryKey: ['payroll-submission-logs', payload.week_id] });
     },
   });
 }

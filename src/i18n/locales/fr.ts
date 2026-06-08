@@ -189,6 +189,11 @@ const fr = {
     lockedAt: 'Verrouillé le',
     detail: 'Détail de la semaine',
     backToList: 'Retour à la liste',
+    submissionLogs: 'Historique des soumissions',
+    noSubmissionLogs: 'Aucune soumission enregistrée pour ce pôle.',
+    submittedBy: 'Soumis par',
+    changes: 'changements',
+    noChanges: 'Aucun changement depuis la soumission précédente',
   },
   global: {
     title: 'Vue Globale',

@@ -123,27 +123,53 @@ serve(async (req) => {
         submissions = subs ?? [];
       }
 
-      // Fetch totals per week in a single query.
+      // Fetch totals per week.
       // History totals must match the global view: entries + approved primes.
+      // Supabase/PostgREST can paginate large result sets, so fetch every page.
       const totalsMap: Record<string, number> = {};
       if (weekIds.length > 0) {
-        const { data: entriesAgg } = await supabase
-          .from('payroll_entries')
-          .select('payroll_week_id, montant')
-          .in('payroll_week_id', weekIds);
+        const pageSize = 1000;
+        let entriesFrom = 0;
 
-        for (const e of (entriesAgg ?? []) as Array<{ payroll_week_id: string; montant: number }>) {
-          totalsMap[e.payroll_week_id] = (totalsMap[e.payroll_week_id] ?? 0) + (e.montant ?? 0);
+        while (true) {
+          const { data: entriesAgg, error: entriesError } = await supabase
+            .from('payroll_entries')
+            .select('payroll_week_id, montant')
+            .in('payroll_week_id', weekIds)
+            .range(entriesFrom, entriesFrom + pageSize - 1);
+
+          if (entriesError) {
+            return errorResponse(entriesError.message, 500);
+          }
+
+          for (const e of (entriesAgg ?? []) as Array<{ payroll_week_id: string; montant: number }>) {
+            totalsMap[e.payroll_week_id] = (totalsMap[e.payroll_week_id] ?? 0) + (e.montant ?? 0);
+          }
+
+          if (!entriesAgg || entriesAgg.length < pageSize) break;
+          entriesFrom += pageSize;
         }
 
-        const { data: primesAgg } = await supabase
-          .from('primes')
-          .select('payroll_week_id, amount')
-          .in('payroll_week_id', weekIds)
-          .eq('status', 'approved');
+        let primesFrom = 0;
 
-        for (const p of (primesAgg ?? []) as Array<{ payroll_week_id: string; amount: number }>) {
-          totalsMap[p.payroll_week_id] = (totalsMap[p.payroll_week_id] ?? 0) + (p.amount ?? 0);
+        while (true) {
+          const { data: primesAgg, error: primesError } = await supabase
+            .from('primes')
+            .select('payroll_week_id, amount')
+            .in('payroll_week_id', weekIds)
+            .eq('status', 'approved')
+            .range(primesFrom, primesFrom + pageSize - 1);
+
+          if (primesError) {
+            return errorResponse(primesError.message, 500);
+          }
+
+          for (const p of (primesAgg ?? []) as Array<{ payroll_week_id: string; amount: number }>) {
+            totalsMap[p.payroll_week_id] = (totalsMap[p.payroll_week_id] ?? 0) + (p.amount ?? 0);
+          }
+
+          if (!primesAgg || primesAgg.length < pageSize) break;
+          primesFrom += pageSize;
         }
       }
 

@@ -1,5 +1,5 @@
 import apiClient from './client';
-import type { PayrollWeek, PayrollEntry, PayrollSubmission } from '@/types';
+import type { PayrollWeek, PayrollEntry, PayrollSubmission, PayrollSubmissionLog } from '@/types';
 
 // ── Payroll Weeks ──
 
@@ -87,6 +87,16 @@ export async function submitPayroll(payload: {
   pole: string;
 }): Promise<PayrollSubmission> {
   const { data } = await apiClient.post<PayrollSubmission>('/payroll-submit', payload);
+  return data;
+}
+
+export async function getPayrollSubmissionLogs(
+  weekId: string,
+  pole?: string,
+): Promise<PayrollSubmissionLog[]> {
+  const { data } = await apiClient.get<PayrollSubmissionLog[]>('/payroll-submit', {
+    params: { week_id: weekId, ...(pole ? { pole } : {}) },
+  });
   return data;
 }
 

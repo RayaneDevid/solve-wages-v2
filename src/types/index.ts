@@ -95,6 +95,43 @@ export interface PayrollSubmission {
   updated_at: string;
 }
 
+export interface PayrollSubmissionLogFieldChange {
+  field: string;
+  label: string;
+  old_value: string | number | boolean | null;
+  new_value: string | number | boolean | null;
+}
+
+export interface PayrollSubmissionLogChange {
+  type: 'initial' | 'added' | 'updated' | 'removed';
+  label?: string;
+  discord_id?: string;
+  discord_username?: string;
+  montant?: number;
+  entry_count?: number;
+  total_montant?: number;
+  fields?: PayrollSubmissionLogFieldChange[];
+}
+
+export interface PayrollSubmissionLog {
+  id: string;
+  payroll_week_id: string;
+  submission_id: string;
+  pole: Pole;
+  submitted_by_id: string;
+  submitted_by_username: string | null;
+  submitted_at: string;
+  total_montant: number;
+  entry_count: number;
+  snapshot: {
+    total_montant: number;
+    entry_count: number;
+    entries: Record<string, unknown>[];
+  };
+  changes: PayrollSubmissionLogChange[];
+  created_at: string;
+}
+
 export interface PoleMember {
   id: string;
   pole: Pole;
