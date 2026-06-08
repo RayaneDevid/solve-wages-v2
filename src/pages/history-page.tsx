@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Calendar, ArrowLeft, Download, Copy } from 'lucide-react';
 import { t } from '@/i18n';
 import { Pole, type PayrollWeek, type PayrollEntry } from '@/types';
@@ -62,14 +62,38 @@ function WeekDetailView({ week, onBack }: { week: PayrollWeek; onBack: () => voi
   const { data: primes } = usePrimes(week.id);
   const { downloadCsv, copyTsv } = useExportPayroll();
 
-  const entries = allEntries?.map(toLocalEntry) ?? [];
+  const entries = useMemo(() => allEntries?.map(toLocalEntry) ?? [], [allEntries]);
   const submissions = week.submissions ?? [];
+
+  const perPolePrimesMap = useMemo(() => {
+    const primaryPole = new Map<string, Pole>();
+    for (const pole of ALL_POLES) {
+      for (const entry of entries) {
+        if (entry.pole === pole && !primaryPole.has(entry.discord_id)) {
+          primaryPole.set(entry.discord_id, pole);
+        }
+      }
+    }
+
+    const result = new Map<Pole, Map<string, number>>();
+    for (const prime of (primes ?? [])) {
+      if (prime.status !== 'approved') continue;
+      const pole = primaryPole.get(prime.discord_id);
+      if (!pole) continue;
+      if (!result.has(pole)) result.set(pole, new Map());
+      const polePrimes = result.get(pole)!;
+      polePrimes.set(prime.discord_id, (polePrimes.get(prime.discord_id) ?? 0) + prime.amount);
+    }
+    return result;
+  }, [entries, primes]);
 
   const poleSummaries = ALL_POLES.map((pole) => {
     const poleEntries = entries.filter((e) => e.pole === pole);
+    const primesTotal = [...(perPolePrimesMap.get(pole)?.values() ?? [])].reduce((sum, amount) => sum + amount, 0);
     return {
       pole,
-      total: poleEntries.reduce((sum, e) => sum + e.montant, 0),
+      total: poleEntries.reduce((sum, e) => sum + e.montant, 0) + primesTotal,
+      primesTotal,
       count: poleEntries.length,
     };
   }).filter((ps) => ps.count > 0);

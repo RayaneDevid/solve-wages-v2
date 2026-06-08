@@ -123,7 +123,8 @@ serve(async (req) => {
         submissions = subs ?? [];
       }
 
-      // Fetch totals per week in a single query
+      // Fetch totals per week in a single query.
+      // History totals must match the global view: entries + approved primes.
       const totalsMap: Record<string, number> = {};
       if (weekIds.length > 0) {
         const { data: entriesAgg } = await supabase
@@ -133,6 +134,16 @@ serve(async (req) => {
 
         for (const e of (entriesAgg ?? []) as Array<{ payroll_week_id: string; montant: number }>) {
           totalsMap[e.payroll_week_id] = (totalsMap[e.payroll_week_id] ?? 0) + (e.montant ?? 0);
+        }
+
+        const { data: primesAgg } = await supabase
+          .from('primes')
+          .select('payroll_week_id, amount')
+          .in('payroll_week_id', weekIds)
+          .eq('status', 'approved');
+
+        for (const p of (primesAgg ?? []) as Array<{ payroll_week_id: string; amount: number }>) {
+          totalsMap[p.payroll_week_id] = (totalsMap[p.payroll_week_id] ?? 0) + (p.amount ?? 0);
         }
       }
 
